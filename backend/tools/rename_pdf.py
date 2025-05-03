@@ -12,6 +12,3 @@ def rename_pdf(old_name, new_name):
     old_path = os.path.join("assets", old_name)
     new_path = os.path.join("assets", new_name)
     os.rename(old_path, new_path)
-
-if __name__ == "__main__":
-    rename_pdf("test.pdf", "test2.pdf")
