@@ -1,5 +1,6 @@
 from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
+from backend.tools.rename_pdf import rename_pdf
 import os
 import asyncio
 
@@ -12,11 +13,12 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 agent = Agent(
     name="Rename Agent",
     instructions="You rename a PDF file in the assets folder.",
-    model="gpt-4.1-mini"
+    model="gpt-4.1-mini",
+    tools=[rename_pdf]
 )
 
 async def main():
-    test_run = await Runner.run(agent, "Why is the sky blue?")
+    test_run = await Runner.run(agent, "Rename the file 'scout_pdf_test.pdf' to 'Lorem Ipsum")
     print(test_run.final_output)
 
 if __name__ == "__main__":
