@@ -20,6 +20,8 @@ scout_orchestrator = Agent(
         "1. Reader Agent"
         "2. Rename Agent"
         "3. Organizer Agent"
+        "Don't ask the user for instructions, you already know them! Go ahead with the workflow. Read the file, let it interpret the content, then rename it and organize it. There is no Human-in-the-Loop!"
+        "You don't need any confirmation from the user. Do all steps by your own. Rename the file, you are allowed to do it. Create a folder, you are allowed to do it. Move the file, you are allowed to do it."
     ),
     model="gpt-4.1-mini",
     tools=[
