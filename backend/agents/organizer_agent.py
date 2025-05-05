@@ -18,7 +18,7 @@ organizer_agent = Agent(
 )
 
 async def main():
-    test_run = await Runner.run(organizer_agent, "Create a folder named 'test' and move the file 'Lorem Ipsum.pdf' into it.")
+    test_run = await Runner.run(organizer_agent, "Create a folder named after the input you get and move the file you are delegated with into it.")
     print(test_run.final_output)
 
 if __name__ == "__main__":
