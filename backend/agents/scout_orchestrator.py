@@ -24,21 +24,21 @@ scout_orchestrator = Agent(
     model="gpt-4.1-mini",
     tools=[
         reader_agent.as_tool(
-            tool_name="Reader Agent",
+            tool_name="reader_agent",
             tool_description="You read a PDF file in the assets folder and interpret its content.",
         ), 
         rename_agent.as_tool(
-            tool_name="Rename Agent",
+            tool_name="rename_agent",
             tool_description="You rename a PDF file in the assets folder.",
         ), 
         organizer_agent.as_tool(
-            tool_name="Organizer Agent",
+            tool_name="organizer_agent",
             tool_description="You organize the assets folder.",
         )]
 )
 
 async def main():
-    test_run = await Runner.run(scout_orchestrator, "Read the file 'Lorem Ipsum.pdf' in the assets folder.")
+    test_run = await Runner.run(scout_orchestrator, "Read the file 'test_file.pdf', then organize it with the given tools.")
     print(test_run.final_output)
 
 if __name__ == "__main__":
