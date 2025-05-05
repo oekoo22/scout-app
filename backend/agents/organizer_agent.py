@@ -10,7 +10,7 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Create the agent
-agent = Agent(
+organizer_agent = Agent(
     name="Organizer Agent",
     instructions="You organize the assets folder.",
     model="gpt-4.1-mini",

@@ -10,7 +10,7 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Create the agent
-agent = Agent(
+rename_agent = Agent(
     name="Rename Agent",
     instructions="You rename a PDF file in the assets folder.",
     model="gpt-4.1-mini",
