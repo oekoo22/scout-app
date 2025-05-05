@@ -1,6 +1,5 @@
 from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
-from backend.tools.manage_folder import create_folder, move_file
 import os
 import asyncio
 
@@ -10,15 +9,14 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Create the agent
-organizer_agent = Agent(
-    name="Organizer Agent",
-    instructions="You organize the assets folder.",
+reader_agent = Agent(
+    name="Reader Agent",
+    instructions="You read a PDF file in the assets folder and interpret its content.",
     model="gpt-4.1-mini",
-    tools=[create_folder, move_file]
 )
 
 async def main():
-    test_run = await Runner.run(organizer_agent, "Create a folder named 'test' and move the file 'Lorem Ipsum.pdf' into it.")
+    test_run = await Runner.run(reader_agent, "Read the file 'Lorem Ipsum.pdf' in the assets folder.")
     print(test_run.final_output)
 
 if __name__ == "__main__":
