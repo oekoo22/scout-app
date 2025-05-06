@@ -12,7 +12,11 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 # Create the agent
 reader_agent = Agent(
     name="Reader Agent",
-    instructions="Read the PDF file and interpret its content. Give the interpreted content as a keyword as output so an other agent could use it.",
+    instructions=(
+        "Read the PDF file and interpret its content." 
+        "Give the interpreted content as a keyword as output so an other agent could use it."
+        "Reduce your evaluated keywords for the one which is matching the most."
+    ),
     model="gpt-4.1-mini",
     tools=[read_pdf]
 )
