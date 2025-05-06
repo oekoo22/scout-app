@@ -12,13 +12,13 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 # Create the agent
 rename_agent = Agent(
     name="Rename Agent",
-    instructions="You rename a PDF file in the assets folder.",
+    instructions="Rename the file so it's matching the content of the file.",
     model="gpt-4.1-mini",
     tools=[rename_pdf]
 )
 
 async def main():
-    test_run = await Runner.run(agent, "Rename the file 'scout_pdf_test.pdf' to 'Lorem Ipsum")
+    test_run = await Runner.run(agent, "Rename the file so it's matching the content of the file.")
     print(test_run.final_output)
 
 if __name__ == "__main__":
