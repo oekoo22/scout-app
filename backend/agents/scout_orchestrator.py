@@ -26,11 +26,16 @@ async def main():
 
         renamed_file = await Runner.run(rename_agent, input_items)
 
+        input_items = renamed_file.to_input_list()
         print("File renamed to:", renamed_file.final_output)
 
-        organized_file = await Runner.run(organizer_agent, f"Organize the file called {input_items}")
+        foldered_file = await Runner.run(folder_agent, f"Organize the file called {input_items}")
 
-        print("File organized in:", organized_file.final_output)
+        print("File organized in:", foldered_file.final_output)
+
+        moved_file = await Runner.run(file_mover_agent, f"Move the file called {renamed_file.final_output} to the folder {foldered_file.final_output}")
+
+        print("File moved to:", moved_file.final_output)
 
 
 if __name__ == "__main__":

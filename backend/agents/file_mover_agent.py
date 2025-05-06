@@ -17,7 +17,6 @@ file_mover_agent = Agent(
         "The input you get is the name of a file the agent network is trying to organize."
         "The file must be moved and it is your job to do so. You don't have to create a folder or evaluate in which it should move. Get that from the input."
         "Just move the file."
-        
     ),
     model="gpt-4.1-mini",
     tools=[move_file]
