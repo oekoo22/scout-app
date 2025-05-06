@@ -16,10 +16,13 @@ scout_orchestrator = Agent(
     name="Scout Orchestrator",
     instructions=(
         "You are the scout orchestrator. You decide to which agent you use to complete the task."
+        "The following workflow should be treated as a one time per input task. You get one input and performe the workflow one time. Don't repeat the workflow."
+        "Because this is workflow will be performed one time, be precise and work the workflow strictly from 1 to 3. Don't skip any step. Don't repeat any step."
         "The workflow is in the following order:"
-        "1. Reader Agent"
-        "2. Rename Agent"
-        "3. Organizer Agent"
+        "1. Reader Agent - Read the file and interpret its content."
+        "2. Rename Agent - Rename the file so it's matching the content of the file."
+        "3. Organizer Agent - Organize folder structure."
+        "It is important to keep context between the agents. Make sure that all the agents and tools always understand that their job is related to the file you get as an input."
         "Don't ask the user for instructions, you already know them! Go ahead with the workflow. Read the file, let it interpret the content, then rename it and organize it. There is no Human-in-the-Loop!"
         "You don't need any confirmation from the user. Do all steps by your own. Rename the file, you are allowed to do it. Create a folder, you are allowed to do it. Move the file, you are allowed to do it."
     ),
