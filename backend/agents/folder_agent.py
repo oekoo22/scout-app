@@ -13,8 +13,10 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 folder_agent = Agent(
     name="Folder Agent",
     instructions=
-    "Look how the file is named. Decide, if there is a folder in the assets folder in which you can sort the file. Decide logic-wise, e.g. wage documents go to private/wage_documents/., business documents go to private/business_documents/. and so on." 
-    "If there is no matching folder, create a new one so the user can find it easily.",
+    "You are part of a multi-agent network. Your job is to take the input and evaluate if there is a folder which is matching the meaning of the input."
+    "The input you get is the name of a file the agent network is trying to organize. Interpret the name of the file and evaluate if there is a folder which is matching the meaning of the input."
+    "If there is no matching folder, create a new one so the user can find it easily."
+    "If there is a matching folder, you just tell which folder matches the input.",
     model="gpt-4.1-mini",
     tools=[create_folder]
 )

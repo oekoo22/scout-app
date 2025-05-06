@@ -4,7 +4,8 @@ import os
 import asyncio
 from backend.agents.reader_agent import reader_agent
 from backend.agents.rename_agent import rename_agent
-from backend.agents.organizer_agent import organizer_agent
+from backend.agents.file_mover_agent import file_mover_agent
+from backend.agents.folder_agent import folder_agent
 
 load_dotenv()
 
