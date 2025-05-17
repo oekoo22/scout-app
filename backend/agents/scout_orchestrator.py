@@ -12,6 +12,7 @@ load_dotenv()
 # Set the default OpenAI key
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
+# Run with python -m backend.agents.scout_orchestrator
 async def main():
     
     # Run entire workflow in one trace

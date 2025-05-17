@@ -3,11 +3,15 @@ from dotenv import load_dotenv
 import os
 import asyncio
 from backend.tools.read_pdf import read_pdf
+from pydantic import BaseModel
 
 load_dotenv()
 
 # Set the default OpenAI key
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
+
+class PDFContent(BaseModel):
+    content: str
 
 # Create the agent
 reader_agent = Agent(
@@ -15,10 +19,11 @@ reader_agent = Agent(
     instructions=(
         "Read the PDF file and interpret its content." 
         "Give the interpreted content as a keyword as output so an other agent could use it."
-        "Reduce your evaluated keywords for the one which is matching the most."
+        "Reduce your evaluated keywords for the one which is matching the most. The final_output you create should be one or maximum two keywords which describe the file best."
     ),
     model="gpt-4.1-mini",
-    tools=[read_pdf]
+    tools=[read_pdf],
+    output_type=PDFContent
 )
 
 async def main():

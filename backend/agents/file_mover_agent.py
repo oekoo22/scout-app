@@ -15,7 +15,7 @@ file_mover_agent = Agent(
     instructions=(
         "You are part of a multi-agent network. Your job is to move a file to a folder."
         "The input you get is the name of a file the agent network is trying to organize."
-        "The file must be moved and it is your job to do so. You don't have to create a folder or evaluate in which it should move. Get that from the input."
+        "The file must be moved and it is your job to do so. You don't have to create a folder or evaluate in which it should move. You get that information from the input."
         "Just move the file."
     ),
     model="gpt-4.1-mini",
