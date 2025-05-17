@@ -17,8 +17,6 @@ folder_preparator = Agent(
     name="Folder Preparator",
     instructions=(
         "You are a tool for the folder_agent. Your job is to evaluate if there is the need to create a new folder."
-        "Be pedantic and evaluate if there is the need to create a new folder. Evvaluate the meaning of the folders in the backend/assets path and search for folders which are matching the meaning of the input. The folder must not be name exactly like file, be smart and understand categories of past and future files. Think in schemas rather than single use cases."
-        "If you really can't find any matching folder, then create a new one"
         "Your final_output must be maching the FolderValidator model. Your output is just one boolean True when there is the need to create a new folder, False when there is no need to create a new folder."
     ),
     model="gpt-4.1-mini",
@@ -37,11 +35,9 @@ folder_agent = Agent(
     "The input you get is the name of a file the agent network is trying to organize. Interpret the name of the file and evaluate if there is a folder which is matching the meaning of the input."
     "If folder_is_already_created is True, you have no job and just give the name of the folder as final_output."
     "If folder_is_already_created is False, you need to create a new folder. The name of the folder should be self explanatory to the user and should match the meaning of the file. Give the name of the folder as final_output."
-    """
-    The naming of the folder should follow the following naming convention:
-    - The name of the folder should be user friendly with spaces between words.
+    """The naming of the folder should follow the following naming convention:
+    - The name of the folder should be in user friendly with camelCase.
     - The name of the folder should be in the language the user is using.
-    - The name of the folder should be in upper case for each starting word.
     """
     
     ),
