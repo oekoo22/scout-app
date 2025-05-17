@@ -25,12 +25,12 @@ def move_file(old_path: str, new_path: str) -> bool:
     old_full_path = os.path.join(base_dir, old_path)
     new_full_path = os.path.join(base_dir, new_path)
     
-    # Überprüfe, ob die Ausgangsdatei existiert
+    # Check if the source file exists
     if not os.path.exists(old_full_path):
-        print(f"Fehler: Datei {old_full_path} existiert nicht.")
+        print(f"Error: File {old_full_path} does not exist.")
         return False
     
-    # Stelle sicher, dass das Zielverzeichnis existiert
+    # Make sure the target directory exists
     target_dir = os.path.dirname(new_full_path)
     if not os.path.exists(target_dir):
         try:
