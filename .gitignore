@@ -1,3 +1,9 @@
 venv/
 .env
 __pycache__
+
+# Xcode
+frontend/ScoutApp.xcodeproj
+frontend/ScoutApp.xcodeproj/project.xcworkspace
+frontend/ScoutApp.xcodeproj/xcuserdata/yannicoko.xcuserdatad/xcschemes/xcschememanagement.plist
+frontend/ScoutApp.xcodeproj/xcuserdata/yannicoko.xcuserdatad/xcschemes/ScoutApp.xcscheme
