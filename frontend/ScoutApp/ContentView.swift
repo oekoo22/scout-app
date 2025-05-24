@@ -8,6 +8,11 @@ struct ContentView: View {
                     Label("Scanner", systemImage: "doc.viewfinder")
                 }
             
+            APITestView()
+                .tabItem {
+                    Label("API Test", systemImage: "network")
+                }
+            
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gear")

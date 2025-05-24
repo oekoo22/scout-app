@@ -1,0 +1,123 @@
+import SwiftUI
+
+struct APITestView: View {
+    @State private var helloWorldMessage: String = "Loading..."
+    @State private var fileName: String = "test_file.pdf" // Default or placeholder
+    @State private var orchestratorResponse: ScoutOrchestratorResponse? // Updated type
+    @State private var errorMessage: String? // To display errors
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Hello World Section
+                Text(helloWorldMessage)
+                    .padding()
+                    .onAppear {
+                        fetchHelloWorld()
+                    }
+                
+                Divider()
+                
+                // Orchestrator Section
+                Text("Test Orchestrator")
+                    .font(.headline)
+                
+                TextField("Enter PDF Filename (e.g., test_file.pdf)", text: $fileName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                
+                Button("Process File via Orchestrator") {
+                    triggerOrchestrator()
+                }
+                .padding()
+                .buttonStyle(.borderedProminent)
+                
+                if let response = orchestratorResponse {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Orchestrator Result:").font(.headline)
+                            Text("Original File: \(response.original_file)")
+                            response.renamed_file.map { Text("Renamed File: \($0)") }
+                            response.target_folder.map { Text("Target Folder: \($0)") }
+                            response.final_path_suggestion.map { Text("Final Path Suggestion: \($0)") }
+                            
+                            Text("Status Updates:").font(.subheadline)
+                            ForEach(response.status_updates, id: \.self) {
+                                Text("- \($0)")
+                            }
+                            
+                            response.error_message.map { Text("Error Message: \($0)").foregroundColor(.red) }
+                        }
+                        .padding()
+                    }
+                }
+                
+                if let error = errorMessage {
+                    Text("Error: \(error)")
+                        .foregroundColor(.red)
+                        .padding()
+                }
+                
+                Spacer()
+            }
+            .navigationTitle("API Tester")
+        }
+    }
+    
+    func fetchHelloWorld() {
+        APIService.shared.fetchHelloWorld { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+                    helloWorldMessage = response
+                case .failure(let error):
+                    helloWorldMessage = "Error: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    func triggerOrchestrator() {
+        orchestratorResponse = nil // Clear previous results
+        errorMessage = nil       // Clear previous errors
+        
+        guard !fileName.isEmpty else {
+            errorMessage = "File name cannot be empty."
+            return
+        }
+        
+        APIService.shared.triggerOrchestrator(fileName: fileName) { result in // Updated function call
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+                    self.orchestratorResponse = response
+                    if let backendError = response.error_message {
+                        self.errorMessage = "Backend processing error: \(backendError)"
+                    }
+                case .failure(let error):
+                    self.orchestratorResponse = nil // Clear response on failure
+                    self.errorMessage = "API Call Failed: \(error.localizedDescription)"
+                    // For more detailed error, you might want to switch on APIError cases
+                    switch error {
+                    case .decodingFailed(let decodingError):
+                        self.errorMessage = "Failed to decode response: \(decodingError.localizedDescription)"
+                    case .encodingFailed(let encodingError):
+                        self.errorMessage = "Failed to encode request: \(encodingError.localizedDescription)"
+                    case .invalidURL:
+                        self.errorMessage = "Invalid API URL."
+                    case .requestFailed(let reqError):
+                        self.errorMessage = "Network request failed: \(reqError.localizedDescription)"
+                    case .invalidResponse:
+                        self.errorMessage = "Invalid response from server (e.g., non-200 or unparseable error)."
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct APITestView_Previews: PreviewProvider {
+    static var previews: some View {
+        APITestView()
+    }
+}
