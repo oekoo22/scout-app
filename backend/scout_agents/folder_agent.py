@@ -2,7 +2,7 @@ from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio
-from backend.tools.manage_folder import create_folder
+from tools.manage_folder import create_folder
 from pydantic import BaseModel
 
 load_dotenv()

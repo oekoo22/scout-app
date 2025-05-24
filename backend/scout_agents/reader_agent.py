@@ -2,7 +2,7 @@ from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio
-from backend.tools.read_pdf import read_pdf
+from tools.read_pdf import read_pdf
 from pydantic import BaseModel
 
 load_dotenv()
