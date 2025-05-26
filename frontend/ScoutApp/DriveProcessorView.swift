@@ -11,8 +11,17 @@ struct DriveProcessorView: View {
     @State private var showAlert: Bool = false // Renamed from showErrorAlert for clarity
     @State private var alertMessage: String = ""
 
+    // Computed property for button state with logging
+    private var isProcessButtonEnabled: Bool {
+        let enabled = authService.isAuthenticated && !googleDriveFileId.isEmpty && !isProcessing
+        // This print will go to your Xcode console
+        print("isProcessButtonEnabled: \(enabled) | isAuthenticated: \(authService.isAuthenticated), fileIdIsEmpty: \(googleDriveFileId.isEmpty), isProcessing: \(isProcessing)")
+        return enabled
+    }
+
     var body: some View {
-        // NavigationView allows for a title, though we might hide the main bar if it's within a TabView
+        // Optional: To see when the body itself re-evaluates, you can add a print here too
+        // let _ = print("DriveProcessorView body re-evaluating")
         NavigationView {
             VStack(spacing: 15) {
                 // Title can be part of the NavigationView or a Text element
@@ -36,9 +45,16 @@ struct DriveProcessorView: View {
                     .cornerRadius(10)
                     .padding(.horizontal)
                 } else {
-                    Text("Authenticated with Google Drive!")
-                        .foregroundColor(.green)
-                        .padding(.vertical, 5)
+                    VStack {
+                        Text("Authenticated with Google Drive!")
+                            .foregroundColor(.green)
+                            .padding(.vertical, 5)
+                        Button("Sign Out") {
+                            authService.signOut()
+                        }
+                        .padding(5)
+                        .foregroundColor(.red)
+                    }
                 }
 
                 TextField("Enter Google Drive File ID", text: $googleDriveFileId)
@@ -58,11 +74,11 @@ struct DriveProcessorView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(authService.isAuthenticated && !googleDriveFileId.isEmpty ? Color.green : Color.gray)
+                .background(isProcessButtonEnabled ? Color.green : Color.gray) // Use computed property for background too
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 .padding(.horizontal)
-                .disabled(!authService.isAuthenticated || googleDriveFileId.isEmpty || isProcessing)
+                .disabled(!isProcessButtonEnabled) // Use computed property here
 
                 if isProcessing {
                     ProgressView()

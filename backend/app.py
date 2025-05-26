@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
-from fastapi import HTTPException
+from urllib.parse import urlencode
 
 # Import the main function from scout_orchestrator
 from scout_agents.scout_orchestrator import main as run_scout_orchestration
@@ -27,29 +27,39 @@ def hello_world():
 
 # Google Authentication Endpoints
 @app.get("/auth/google")
-async def auth_google():
+async def auth_google(request: Request):
     drive_service = get_drive_service()
     if drive_service:
-        return {"message": "Already authenticated with Google Drive."}
+        pass
+        
+    app_callback_scheme = request.query_params.get("callback_scheme", "scoutapp")
+    
     authorization_url = get_authorization_url()
-    return RedirectResponse(authorization_url)
+    final_auth_url = get_authorization_url() # Called twice, but okay for now
+    print(f"---- DEBUG: Attempting to redirect to Google auth URL: {final_auth_url} ----") # DEBUG PRINT
+    return RedirectResponse(final_auth_url)
 
 @app.get("/auth/google/callback")
-async def auth_google_callback(request: Request, code: str = None):
+async def auth_google_callback(request: Request, code: str = None, state: str = None):
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code from Google.")
     
-    # The 'code' is the authorization code from Google.
-    # We need to pass the full request URL to exchange_code_for_token if it needs it
-    # for redirect_uri validation, though our current exchange_code_for_token doesn't explicitly use it.
-    # However, the flow object internally might.
+    app_callback_scheme = "scoutapp"
+
+    credentials = exchange_code_for_token(authorization_code=code)
     
-    success = exchange_code_for_token(authorization_code=code)
-    if success:
-        # Optionally, redirect to a frontend page indicating success
-        return {"message": "Successfully authenticated with Google Drive and token saved."}
+    if credentials and credentials.token:
+        access_token = credentials.token
+        redirect_params = {"token": access_token}
+        
+        app_redirect_url = f"{app_callback_scheme}://?{urlencode(redirect_params)}"
+        
+        print(f"Redirecting to Swift app: {app_redirect_url}")
+        return RedirectResponse(app_redirect_url)
     else:
-        raise HTTPException(status_code=500, detail="Failed to exchange authorization code for token.")
+        error_detail = "Failed to exchange authorization code for token or token missing in credentials."
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=error_detail)
 
 # Pydantic model for the request to the orchestrator endpoint
 class OrchestratorRequest(BaseModel):
@@ -69,34 +79,20 @@ class OrchestratorResponse(BaseModel):
 async def trigger_orchestrator_endpoint(payload: OrchestratorRequest):
     drive_service = get_drive_service()
     if not drive_service:
-        # If not authenticated, instruct client to initiate auth flow.
-        # The client would then call /auth/google
         raise HTTPException(
             status_code=401,
             detail="Not authenticated with Google Drive. Please authenticate via /auth/google endpoint."
         )
 
     try:
-        # The orchestrator's main function now accepts the filename (as file_id)
-        # AND the drive_service object, and optionally original_file_name.
-        # Assuming payload.file_name is now the Google Drive File ID.
-        # If the client can also send the original display name, that would be helpful.
-        # For now, let's assume OrchestratorRequest might be extended to include original_file_name.
-        # If not, scout_orchestrator's main will use file_id as a placeholder for name.
-        
-        # Let's assume payload.file_name is the file_id.
-        # We'll need to adjust OrchestratorRequest if we want to pass more than just the ID from client.
-        # For now, we pass file_name from payload as both file_id and a hint for original_file_name.
         result_dict = await run_scout_orchestration(
             file_id_to_process=payload.file_name, 
             drive_service=drive_service,
-            original_file_name=payload.file_name # Passing it as original name too, assuming it might be name or ID
+            original_file_name=payload.file_name 
         )
         return OrchestratorResponse(**result_dict)
     except Exception as e:
-        # Log the exception for debugging on the server side
         print(f"Error in /process-file endpoint: {e}")
-        # Return a structured error response
         return OrchestratorResponse(
             original_file=payload.file_name,
             status_updates=[f"Endpoint error: {str(e)}"],

@@ -74,7 +74,9 @@ def get_authorization_url():
     return authorization_url
 
 def exchange_code_for_token(authorization_code: str):
-    """Exchanges an authorization code for credentials and saves them."""
+    """Exchanges an authorization code for credentials and saves them.
+    Returns the credentials object on success, None on failure.
+    """
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
@@ -84,8 +86,8 @@ def exchange_code_for_token(authorization_code: str):
         flow.fetch_token(code=authorization_code)
         credentials = flow.credentials
         with open(TOKEN_FILE, 'w') as token_file:
-            token_file.write(credentials.to_json())
-        return True
+            token_file.write(credentials.to_json()) # Save to token.json for future server use
+        return credentials # Return the full credentials object
     except Exception as e:
         print(f"Error fetching token: {e}")
-        return False
+        return None
