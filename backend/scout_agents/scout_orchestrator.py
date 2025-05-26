@@ -13,97 +13,126 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Run with python -m backend.agents.scout_orchestrator
-async def main(file_name_to_process: str):
+async def main(file_id_to_process: str, drive_service: object, original_file_name: str = None):
     status_updates = []
     error_message = None
-    final_renamed_file = None
-    final_target_folder = None
-    final_moved_path = None
+    current_file_id = file_id_to_process
+    current_file_name = original_file_name if original_file_name else "unknown_file" # Fallback if not provided
+    final_renamed_name = current_file_name # Initialize with original or fallback name
+    final_target_folder_name = None
+    final_target_folder_id = None # We might get an ID from folder_agent
+    final_moved_path_info = None # Could be new parent ID or confirmation
 
     try:
-        # Run entire workflow in one trace
-        with trace("Scout Orchestrator Trace"):
-            msg = f"Read the file '{file_name_to_process}', then organize it with the given tools."
-            status_updates.append(f"Starting orchestration for: {file_name_to_process}")
+        with trace("Scout Orchestrator Google Drive Trace"):
+            status_updates.append(f"Starting Drive orchestration for file ID: {current_file_id}, original name: {current_file_name}")
 
-            read_file_run = await Runner.run(reader_agent, msg)
-            # Assuming read_file_run.final_output is relevant context/keyword for renaming
-            # And read_file_run.to_input_list() is what rename_agent expects as input for the file to be renamed.
-            # This part might need adjustment based on actual agent contracts.
-            # For rename_agent, the input should be the name of the file to rename.
-            # Let's assume the input to rename_agent should be file_name_to_process if read_file_run doesn't provide it explicitly.
-            # The original code passed `input_items` from `read_file.to_input_list()` to rename_agent.
-            input_for_rename = read_file_run.to_input_list() # This should resolve to the filename to be renamed or context for it.
-            status_updates.append(f"Reader agent processed. Output: {read_file_run.final_output}. Input for rename: {input_for_rename}")
+            # 1. Reader Agent
+            reader_payload = {
+                "drive_service": drive_service,
+                "file_id": current_file_id,
+                "task_prompt": f"Read the content of Google Drive file with ID '{current_file_id}' (original name: '{current_file_name}') and extract key information for organization."
+            }
+            read_file_run = await Runner.run(reader_agent, reader_payload)
+            # Assuming read_file_run.final_output is ExtractedContent(content: str)
+            status_updates.append(f"Reader agent processed. Output content: {getattr(read_file_run.final_output, 'content', 'N/A')}")
+            context_for_agents = getattr(read_file_run.final_output, 'content', '') # Use .content attribute
 
-            # If input_for_rename is not the actual filename, but context, then rename_agent needs the filename.
-            # The rename_agent's prompt: "Your job is to rename a PDF File. You get an input from another agent. That input is the name of the file you should rename."
-            # Let's assume the primary argument to Runner.run for rename_agent should be the file path/name it's supposed to rename.
-            # If read_file_run.to_input_list() provides this, great. Otherwise, it might need to be file_name_to_process.
-            # For now, sticking to the structure implied by the original code for agent inputs.
-            renamed_file_run = await Runner.run(rename_agent, input_for_rename) 
+            # 2. Rename Agent
+            rename_payload = {
+                "drive_service": drive_service,
+                "file_id": current_file_id,
+                "current_file_name": current_file_name,
+                "context": context_for_agents, # Pass the extracted string content
+                "task_prompt": f"Based on the context ('{context_for_agents[:200]}...') and current name, suggest a new, concise, and descriptive filename for the Google Drive file '{current_file_name}' (ID: '{current_file_id}'). Output only the new filename."
+            }
+            renamed_file_run = await Runner.run(rename_agent, rename_payload)
             
-            # Extract new filename from rename_agent's output
-            if hasattr(renamed_file_run.final_output, 'filename'):
-                final_renamed_file = renamed_file_run.final_output.filename
-            elif isinstance(renamed_file_run.final_output, dict) and 'filename' in renamed_file_run.final_output:
-                final_renamed_file = renamed_file_run.final_output['filename']
-            elif isinstance(renamed_file_run.final_output, str): # If it's just the string
-                final_renamed_file = renamed_file_run.final_output
+            # Extract new filename from rename_agent's output (RenameFileOutput(filename: str))
+            if hasattr(renamed_file_run.final_output, 'filename') and isinstance(renamed_file_run.final_output.filename, str) and renamed_file_run.final_output.filename.strip():
+                final_renamed_name = renamed_file_run.final_output.filename.strip()
+                status_updates.append(f"Rename agent suggested new name: '{final_renamed_name}'")
             else:
-                raise ValueError(f"Rename agent did not return expected filename. Got: {renamed_file_run.final_output}")
-            status_updates.append(f"File renamed to: {final_renamed_file}")
+                status_updates.append(f"Rename agent did not return a valid new filename (got: {renamed_file_run.final_output}), using current name: {current_file_name}")
+            # Note: actual rename operation happens within the agent. File ID typically doesn't change.
+            current_file_name = final_renamed_name # Update current name for subsequent agents
 
-            # Folder agent should operate on the newly renamed file
-            foldered_file_run = await Runner.run(folder_agent, f"Organize the file called {final_renamed_file}")
-            if hasattr(foldered_file_run.final_output, 'folder_name'):
-                final_target_folder = foldered_file_run.final_output.folder_name
-            elif isinstance(foldered_file_run.final_output, str):
-                final_target_folder = foldered_file_run.final_output
+            # 3. Folder Agent
+            folder_payload = {
+                "drive_service": drive_service,
+                "file_id": current_file_id, 
+                "file_name": current_file_name, 
+                "context": context_for_agents, # Pass the extracted string content
+                "task_prompt": f"Based on the content and name ('{current_file_name}') of Google Drive file ID '{current_file_id}', determine a suitable Google Drive folder. If a relevant folder like 'Project Reports' or 'Invoices' exists, use it. Otherwise, create a new folder with an appropriate name. Output the folder name and ID."
+            }
+            foldered_file_run = await Runner.run(folder_agent, folder_payload)
+
+            # Extract folder_name and folder_id from folder_agent's output (DriveFolderOutput(folder_name: str, folder_id: str))
+            if hasattr(foldered_file_run.final_output, 'folder_name') and hasattr(foldered_file_run.final_output, 'folder_id'):
+                final_target_folder_name = getattr(foldered_file_run.final_output, 'folder_name', None)
+                final_target_folder_id = getattr(foldered_file_run.final_output, 'folder_id', None)
+                if not final_target_folder_name or not final_target_folder_id:
+                    status_updates.append(f"Folder agent returned incomplete data: Name='{final_target_folder_name}', ID='{final_target_folder_id}'. Cannot proceed with move.")
+                    raise ValueError(f"Folder agent did not return a valid folder name and ID. Got: Name='{final_target_folder_name}', ID='{final_target_folder_id}'")
             else:
-                raise ValueError(f"Folder agent did not return expected folder name. Got: {foldered_file_run.final_output}")
-            status_updates.append(f"File to be organized in folder: {final_target_folder}")
+                status_updates.append(f"Folder agent did not return expected DriveFolderOutput. Got: {foldered_file_run.final_output}. Cannot proceed with move.")
+                raise ValueError(f"Folder agent did not return expected DriveFolderOutput. Got: {foldered_file_run.final_output}")
+            
+            status_updates.append(f"File '{current_file_name}' (ID: {current_file_id}) to be organized in folder: '{final_target_folder_name}' (ID: {final_target_folder_id}) ")
 
-            moved_file_run = await Runner.run(file_mover_agent, f"Move the file called {final_renamed_file} to the folder {final_target_folder}")
-            # Assuming the file_mover_agent works with paths relative to an 'assets' or similar base directory for tools
-            # The actual final path might be constructed based on where file_mover_agent places it.
-            # For now, let's assume the 'final_target_folder' is a conceptual destination.
-            final_moved_path = f"{final_target_folder}/{final_renamed_file}" # Example path construction
-            status_updates.append(f"File move requested. Mover output: {moved_file_run.final_output}")
-            status_updates.append("Orchestration completed.")
+            # 4. File Mover Agent
+            # Ensure final_target_folder_id is valid before attempting move
+            if not final_target_folder_id:
+                status_updates.append(f"Cannot move file: Target folder ID is missing. Skipping move operation.")
+                final_moved_path_info = {"status": "skipped", "reason": "Missing target folder ID"}
+            else:
+                mover_payload = {
+                    "drive_service": drive_service,
+                    "file_id": current_file_id,
+                    "file_name": current_file_name,
+                    "target_folder_name": final_target_folder_name,
+                    "target_folder_id": final_target_folder_id, 
+                    "task_prompt": f"Move the Google Drive file '{current_file_name}' (ID: '{current_file_id}') into the Google Drive folder named '{final_target_folder_name}' (ID: '{final_target_folder_id}'). Confirm success or report issues."
+                }
+                moved_file_run = await Runner.run(file_mover_agent, mover_payload)
+                # Mover agent returns FileMoveConfirmation(file_id: str, moved_to_folder_id: str, status: str)
+                final_moved_path_info = moved_file_run.final_output 
+                status_updates.append(f"File move processed. Mover output: {final_moved_path_info}")
+            
+            status_updates.append("Google Drive orchestration completed.")
 
     except Exception as e:
         error_message = str(e)
         status_updates.append(f"Error during orchestration: {error_message}")
+        # Log full traceback for server-side debugging
+        import traceback
+        print(f"Orchestrator Error: {error_message}\n{traceback.format_exc()}")
 
     return {
-        "original_file": file_name_to_process,
-        "renamed_file": final_renamed_file,
-        "target_folder": final_target_folder,
-        "final_path_suggestion": final_moved_path, # This is a suggested path
+        "original_file": {"id": file_id_to_process, "name": original_file_name or file_id_to_process},
+        "renamed_file": {"id": current_file_id, "name": final_renamed_name},
+        "target_folder": {"name": final_target_folder_name, "id": final_target_folder_id},
+        "final_path_suggestion": final_moved_path_info, # This is now info from mover agent
         "status_updates": status_updates,
         "error_message": error_message
     }
 
-if __name__ == "__main__":
-    # Example usage:
-    test_file = "test_file.pdf" # Make sure this file exists in backend/assets/
-    # Create a dummy file in backend/assets/ for local testing if it doesn't exist
-    assets_dir = os.path.join(os.path.dirname(__file__), "../assets")
-    if not os.path.exists(assets_dir):
-        os.makedirs(assets_dir)
-    dummy_file_path = os.path.join(assets_dir, test_file)
-    if not os.path.exists(dummy_file_path):
-        print(f"Warning: {test_file} not found in backend/assets/. Creating a dummy file.")
-        with open(dummy_file_path, "w") as f:
-            f.write("This is a test PDF content for Scout orchestrator testing.")
-            
-    orchestration_result = asyncio.run(main(test_file))
-    print("\nOrchestration Result:")
-    for key, value in orchestration_result.items():
-        if key == "status_updates" and isinstance(value, list):
-            print(f"  {key}:")
-            for update in value:
-                print(f"    - {update}")
-        else:
-            print(f"  {key}: {value}")
+# if __name__ == "__main__":
+#     # Example usage (commented out as it requires live drive_service and file_id):
+#     # test_file_id = "your_google_drive_file_id_here" 
+#     # test_original_name = "test_document.pdf"
+#     # # You would need to set up a mock or real drive_service for local testing
+#     # class MockDriveService:
+#     #     def files(self):
+#     #         # Implement mock methods as needed by agents for testing
+#     #         pass 
+#     # mock_service = MockDriveService()
+#     # orchestration_result = asyncio.run(main(test_file_id, mock_service, test_original_name))
+#     # print("\nOrchestration Result:")
+#     # for key, value in orchestration_result.items():
+#     #     if key == "status_updates" and isinstance(value, list):
+#     #         print(f"  {key}:")
+#     #         for update in value:
+#     #             print(f"    - {update}")
+#     #     else:
+#     #         print(f"  {key}: {value}")
