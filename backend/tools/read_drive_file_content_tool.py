@@ -3,20 +3,32 @@ import pypdfium2 as pdfium
 from googleapiclient.http import MediaIoBaseDownload
 from agents import function_tool
 
+# Module-level variable to hold the drive_service instance
+_current_drive_service = None
+
+def set_current_drive_service(drive_service_instance: object):
+    """Sets the drive_service instance for the tools in this module."""
+    global _current_drive_service
+    _current_drive_service = drive_service_instance
+
 @function_tool
-def get_drive_file_text_content(drive_service: object, file_id: str) -> str:
+def get_drive_file_text_content(file_id: str) -> str:
     """Reads a file from Google Drive (given its file_id) and returns its text content.
     Handles Google Docs, Sheets, Slides (by exporting to PDF), native PDFs, and plain text files.
     Args:
-        drive_service: The authenticated Google Drive API service object.
         file_id: The ID of the file in Google Drive.
     Returns:
         The extracted text content of the file as a string.
     Raises:
-        Exception: If the file cannot be accessed or processed.
+        Exception: If the file cannot be accessed or processed, or if drive_service is not set.
     """
+    if _current_drive_service is None:
+        raise Exception("Drive service has not been initialized for read_drive_file_content_tool. Call set_current_drive_service first.")
+    
+    drive_service_to_use = _current_drive_service
+    
     try:
-        file_metadata = drive_service.files().get(fileId=file_id, fields='id, name, mimeType').execute()
+        file_metadata = drive_service_to_use.files().get(fileId=file_id, fields='id, name, mimeType').execute()
         mime_type = file_metadata.get('mimeType')
         file_name = file_metadata.get('name', 'Unknown File')
 
@@ -25,23 +37,23 @@ def get_drive_file_text_content(drive_service: object, file_id: str) -> str:
 
         if mime_type == 'application/vnd.google-apps.document':
             print(f"Exporting Google Doc '{file_name}' (ID: {file_id}) to PDF for text extraction.")
-            request = drive_service.files().export_media(fileId=file_id, mimeType='application/pdf')
+            request = drive_service_to_use.files().export_media(fileId=file_id, mimeType='application/pdf')
             content_bytes = request.execute()
             # Fall through to PDF processing
         elif mime_type == 'application/vnd.google-apps.spreadsheet':
             print(f"Exporting Google Sheet '{file_name}' (ID: {file_id}) to PDF for text extraction.")
-            request = drive_service.files().export_media(fileId=file_id, mimeType='application/pdf')
+            request = drive_service_to_use.files().export_media(fileId=file_id, mimeType='application/pdf')
             content_bytes = request.execute()
             # Fall through to PDF processing
         elif mime_type == 'application/vnd.google-apps.presentation':
             print(f"Exporting Google Slides '{file_name}' (ID: {file_id}) to PDF for text extraction.")
-            request = drive_service.files().export_media(fileId=file_id, mimeType='application/pdf')
+            request = drive_service_to_use.files().export_media(fileId=file_id, mimeType='application/pdf')
             content_bytes = request.execute()
             # Fall through to PDF processing
         elif mime_type == 'application/pdf' or content_bytes: # content_bytes will be set if exported from GSuite type
             if not content_bytes: # If it's a native PDF, download it
                 print(f"Downloading native PDF '{file_name}' (ID: {file_id}) for text extraction.")
-                request = drive_service.files().get_media(fileId=file_id)
+                request = drive_service_to_use.files().get_media(fileId=file_id)
                 fh = io.BytesIO()
                 downloader = MediaIoBaseDownload(fh, request)
                 done = False
@@ -58,7 +70,7 @@ def get_drive_file_text_content(drive_service: object, file_id: str) -> str:
         
         elif mime_type and mime_type.startswith('text/'):
             print(f"Downloading text file '{file_name}' (ID: {file_id}) for content extraction.")
-            request = drive_service.files().get_media(fileId=file_id)
+            request = drive_service_to_use.files().get_media(fileId=file_id)
             fh = io.BytesIO()
             downloader = MediaIoBaseDownload(fh, request)
             done = False
@@ -74,7 +86,7 @@ def get_drive_file_text_content(drive_service: object, file_id: str) -> str:
         else: # Try to download and decode other types as a last resort
             print(f"Attempting to download and process unsupported MIME type '{mime_type}' for file '{file_name}' (ID: {file_id}).")
             try:
-                request = drive_service.files().get_media(fileId=file_id)
+                request = drive_service_to_use.files().get_media(fileId=file_id)
                 fh = io.BytesIO()
                 downloader = MediaIoBaseDownload(fh, request)
                 done = False

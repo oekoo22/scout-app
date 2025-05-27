@@ -1,24 +1,26 @@
 from agents import function_tool
-from typing import Annotated, List, Dict
+from typing import List, Dict
+from google_drive_auth import get_drive_service
 
 @function_tool
-def search_drive_folders(
-    drive_service: Annotated[object, "The authenticated Google Drive API service object."],
-    folder_name_query: Annotated[str, "The name or part of the name of the folder to search for."]
-) -> List[Dict[str, str]]:
+def search_drive_folders(folder_name_query: str) -> List[Dict[str, str]]:
     """Searches for folders in Google Drive by name.
 
     Args:
-        drive_service: The authenticated Google Drive API service object.
         folder_name_query: The name (or partial name) to query for. 
                            The search will look for folders whose name contains this query string.
 
     Returns:
         A list of dictionaries, where each dictionary contains 'id' and 'name' of a found folder.
-        Returns an empty list if no folders match or an error occurs.
+        Returns an empty list if no folders match, drive service cannot be obtained, or an error occurs.
     """
     folders_found = []
     try:
+        drive_service = get_drive_service()
+        if not drive_service:
+            print("Could not obtain Google Drive service. User might not be authenticated. Returning empty list.")
+            return [] # Return empty list as per existing error handling for this tool
+
         if not folder_name_query or not folder_name_query.strip():
             # Consider if an empty query should list all root folders or return error/empty.
             # For now, returning empty for an empty query to avoid overly broad results.

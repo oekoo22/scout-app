@@ -1,16 +1,12 @@
 from agents import function_tool
 from typing import Annotated, Dict, Optional
+from google_drive_auth import get_drive_service
 
 @function_tool
-def create_drive_folder(
-    drive_service: Annotated[object, "The authenticated Google Drive API service object."],
-    new_folder_name: Annotated[str, "The name for the new folder."],
-    parent_folder_id: Annotated[Optional[str], "Optional. The ID of the parent folder. If None, folder is created in root."] = None
-) -> Dict[str, str]:
+def create_drive_folder(new_folder_name: str, parent_folder_id: str) -> Dict[str, str]:
     """Creates a new folder in Google Drive.
 
     Args:
-        drive_service: The authenticated Google Drive API service object.
         new_folder_name: The name for the new folder.
         parent_folder_id: Optional. The ID of the parent folder. If not provided, 
                           the folder will be created in the root directory of 'My Drive'.
@@ -20,9 +16,13 @@ def create_drive_folder(
         
     Raises:
         ValueError: If new_folder_name is empty.
-        Exception: If the folder creation fails.
+        Exception: If the folder creation fails or if drive service cannot be obtained.
     """
     try:
+        drive_service = get_drive_service()
+        if not drive_service:
+            raise Exception("Could not obtain Google Drive service. User might not be authenticated.")
+
         if not new_folder_name or not new_folder_name.strip():
             raise ValueError("New folder name cannot be empty.")
 

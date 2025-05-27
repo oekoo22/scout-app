@@ -13,7 +13,7 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Run with python -m backend.agents.scout_orchestrator
-async def main(file_id_to_process: str, drive_service: object, original_file_name: str = None):
+async def main(file_id_to_process: str, drive_service: object, original_file_name: str):
     status_updates = []
     error_message = None
     current_file_id = file_id_to_process
@@ -27,17 +27,20 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
         with trace("Scout Orchestrator Google Drive Trace"):
             status_updates.append(f"Starting Drive orchestration for file ID: {current_file_id}, original name: {current_file_name}")
 
-            # 1. Reader Agent
-            reader_payload = {
-                "file_id": current_file_id,
-                "task_prompt": f"Read the content of Google Drive file with ID '{current_file_id}' (original name: '{current_file_name}') and extract key information for organization."
-            }
             # Wrap payload in a list of a user message dictionary
             try:
                 status_updates.append(f"Running Reader Agent for file: {current_file_id}")
-                read_file_run = await Runner.run(reader_agent, [{"role": "user", "content": reader_payload}])
-                if read_file_run.error:
-                    raise Exception(f"Reader Agent Error: {read_file_run.error_message}")
+                reader_payload = {
+                    "file_id": current_file_id,
+                    "original_file_name": current_file_name,
+                    "task_prompt": f"Read the content of Google Drive file with ID '{current_file_id}' (original name: '{current_file_name}') and extract key information for organization."
+                }
+                read_file_run = await Runner.run(
+                    reader_agent, 
+                    reader_payload["task_prompt"]
+                )
+                #if read_file_run.error:
+                 #   raise Exception(f"Reader Agent Error: {read_file_run.error_message}")
                 extracted_content_model = read_file_run.final_output
                 status_updates.append(f"Reader agent processed. Output content: {getattr(extracted_content_model, 'content', 'N/A')}")
                 context_for_agents = getattr(extracted_content_model, 'content', '') # Use .content attribute
@@ -47,18 +50,18 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                 raise
 
             # 2. Rename Agent
-            rename_payload = {
-                "file_id": current_file_id,
-                "current_file_name": current_file_name,
-                "context": context_for_agents, # Pass the extracted string content
-                "task_prompt": f"Based on the context ('{context_for_agents[:200]}...') and current name, suggest a new, concise, and descriptive filename for the Google Drive file '{current_file_name}' (ID: '{current_file_id}'). Output only the new filename."
-            }
-            # Wrap payload in a list of a user message dictionary
             try:
                 status_updates.append(f"Running Rename Agent for file: {current_file_name}")
-                rename_file_run = await Runner.run(rename_agent, [{"role": "user", "content": rename_payload}])
-                if rename_file_run.error:
-                    raise Exception(f"Rename Agent Error: {rename_file_run.error_message}")
+                rename_payload = {
+                    "file_id": current_file_id,
+                    "current_file_name": current_file_name,
+                    "context": context_for_agents,
+                    "task_prompt": f"Based on the context ('{context_for_agents[:200]}...') and current name, suggest a new, concise, and descriptive filename for the Google Drive file '{current_file_name}' (ID: '{current_file_id}'). Output only the new filename."
+                }
+                rename_file_run = await Runner.run(
+                    rename_agent, 
+                    rename_payload["task_prompt"]
+                )
                 renamed_file_info = rename_file_run.final_output
                 # Extract new filename from rename_agent's output (RenameFileOutput(filename: str))
                 if hasattr(renamed_file_info, 'filename') and isinstance(renamed_file_info.filename, str) and renamed_file_info.filename.strip():
@@ -80,12 +83,12 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                 "context": context_for_agents, # Pass the extracted string content
                 "task_prompt": f"Based on the content and name ('{current_file_name}') of Google Drive file ID '{current_file_id}', determine a suitable Google Drive folder. If a relevant folder like 'Project Reports' or 'Invoices' exists, use it. Otherwise, create a new folder with an appropriate name. Output the folder name and ID."
             }
-            # Wrap payload in a list of a user message dictionary
             try:
                 status_updates.append(f"Running Folder Agent for file: {current_file_name}")
-                folder_suggestion_run = await Runner.run(folder_agent, [{"role": "user", "content": folder_payload}])
-                if folder_suggestion_run.error:
-                    raise Exception(f"Folder Agent Error: {folder_suggestion_run.error_message}")
+                folder_suggestion_run = await Runner.run(
+                    folder_agent, 
+                    folder_payload["task_prompt"]
+                )
                 folder_info = folder_suggestion_run.final_output
                 # Extract folder_name and folder_id from folder_agent's output (DriveFolderOutput(folder_name: str, folder_id: str))
                 if hasattr(folder_info, 'folder_name') and hasattr(folder_info, 'folder_id'):
@@ -116,12 +119,12 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                     "target_folder_id": final_target_folder_id, 
                     "task_prompt": f"Move the Google Drive file '{current_file_name}' (ID: '{current_file_id}') into the Google Drive folder named '{final_target_folder_name}' (ID: '{final_target_folder_id}'). Confirm success or report issues."
                 }
-                # Wrap payload in a list of a user message dictionary
                 try:
                     status_updates.append(f"Running File Mover Agent for file: {current_file_name} to folder: {final_target_folder_name}")
-                    move_file_run = await Runner.run(file_mover_agent, [{"role": "user", "content": mover_payload}])
-                    if move_file_run.error:
-                        raise Exception(f"File Mover Agent Error: {move_file_run.error_message}")
+                    move_file_run = await Runner.run(
+                        file_mover_agent, 
+                        mover_payload["task_prompt"]
+                    )
                     final_moved_path_info = move_file_run.final_output
                     status_updates.append(f"File move processed. Mover output: {final_moved_path_info}")
                 except Exception as e:

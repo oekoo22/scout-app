@@ -1,19 +1,15 @@
 from agents import function_tool
-from typing import Annotated, Dict
+from typing import Dict
+from google_drive_auth import get_drive_service
 
 @function_tool
-def move_drive_file(
-    drive_service: Annotated[object, "The authenticated Google Drive API service object."],
-    file_id: Annotated[str, "The ID of the file in Google Drive to move."],
-    target_folder_id: Annotated[str, "The ID of the destination folder in Google Drive."]
-) -> Dict[str, str]:
+def move_drive_file(file_id: str, target_folder_id: str) -> Dict[str, str]:
     """Moves a file to a specified folder in Google Drive.
 
     This is achieved by updating the file's parentage. Any existing parents will be removed 
     and the target_folder_id will be set as the new parent.
 
     Args:
-        drive_service: The authenticated Google Drive API service object.
         file_id: The ID of the file to move.
         target_folder_id: The ID of the folder to move the file into.
 
@@ -22,9 +18,13 @@ def move_drive_file(
         
     Raises:
         ValueError: If file_id or target_folder_id is empty.
-        Exception: If the move operation fails.
+        Exception: If the move operation fails or if drive service cannot be obtained.
     """
     try:
+        drive_service = get_drive_service()
+        if not drive_service:
+            raise Exception("Could not obtain Google Drive service. User might not be authenticated.")
+
         if not file_id or not file_id.strip():
             raise ValueError("File ID cannot be empty.")
         if not target_folder_id or not target_folder_id.strip():

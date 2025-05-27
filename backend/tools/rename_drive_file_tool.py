@@ -1,16 +1,14 @@
 from agents import function_tool
-from typing import Annotated
+from google_drive_auth import get_drive_service
 
 @function_tool
 def rename_drive_file(
-    drive_service: Annotated[object, "The authenticated Google Drive API service object."],
-    file_id: Annotated[str, "The ID of the file in Google Drive to rename."],
-    new_name: Annotated[str, "The desired new name for the file."]
+    file_id: str,
+    new_name: str
 ) -> str:
     """Renames a file in Google Drive.
 
     Args:
-        drive_service: The authenticated Google Drive API service object.
         file_id: The ID of the file in Google Drive.
         new_name: The new name for the file.
 
@@ -18,9 +16,13 @@ def rename_drive_file(
         The new name of the file if successful.
     
     Raises:
-        Exception: If the renaming operation fails.
+        Exception: If the renaming operation fails or if drive service cannot be obtained.
     """
     try:
+        drive_service = get_drive_service()
+        if not drive_service:
+            raise Exception("Could not obtain Google Drive service. User might not be authenticated.")
+
         if not new_name or not new_name.strip():
             raise ValueError("New name cannot be empty.")
         
