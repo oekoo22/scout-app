@@ -52,25 +52,31 @@ class AuthService: NSObject, ObservableObject {
 
                 print("Callback URL received: \(callbackURL.absoluteString)")
 
-                // Extract token from callback URL (e.g., scoutapp://?token=YOUR_TOKEN)
+                // Temporarily check for status=success instead of token
                 let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)
-                if let tokenItem = components?.queryItems?.first(where: { $0.name == "token" }) {
-                    self.accessToken = tokenItem.value
-                    self.isAuthenticated = true
-                    UserDefaults.standard.set(self.accessToken, forKey: self.userDefaultsTokenKey) // Save token
-                    print("Authentication successful. Token: \(self.accessToken ?? "N/A")")
+                if let statusItem = components?.queryItems?.first(where: { $0.name == "status" }), statusItem.value == "success" {
+                    self.isAuthenticated = true // Mark as authenticated for testing purposes
+                    self.accessToken = "dummy_success_token" // Set a dummy token or handle appropriately
+                    UserDefaults.standard.set(self.accessToken, forKey: self.userDefaultsTokenKey) // Save dummy token
+                    print("Authentication successful (status=success received).")
                     completion(true, nil)
                 } else {
-                    print("Error: Token not found in callback URL. Query items: \(components?.queryItems ?? [])")
+                    print("Error: 'status=success' not found in callback URL. Query items: \(components?.queryItems ?? [])")
                     self.isAuthenticated = false
-                    completion(false, NSError(domain: "AuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "Token not found in callback URL."]))
+                    completion(false, NSError(domain: "AuthService", code: -3, userInfo: [NSLocalizedDescriptionKey: "'status=success' not found in callback URL."]))
                 }
             }
         }
 
         self.authSession?.presentationContextProvider = self
-        self.authSession?.prefersEphemeralWebBrowserSession = false // Set to false for testing
-        self.authSession?.start()
+        self.authSession?.prefersEphemeralWebBrowserSession = true // Recommended for auth testing
+        if let sessionStarted = self.authSession?.start(), sessionStarted {
+            print("ASWebAuthenticationSession started successfully.")
+        } else {
+            print("ASWebAuthenticationSession FAILED to start.")
+            completion(false, NSError(domain: "AuthService", code: -4, userInfo: [NSLocalizedDescriptionKey: "ASWebAuthenticationSession failed to start."]))
+            return
+        }
     }
     
     func signOut() {
@@ -85,6 +91,16 @@ class AuthService: NSObject, ObservableObject {
 
 extension AuthService: ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+        if #available(iOS 15, *) {
+            let scenes = UIApplication.shared.connectedScenes
+            let windowScene = scenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+            if let window = windowScene?.windows.first(where: { $0.isKeyWindow }) {
+                return window
+            }
+        }
+        // Fallback for older iOS versions or if no key window is found in the active scene
+        // This will still show a warning for iOS 13/14 deployment targets if you don't have a window.
+        // If your app's minimum deployment target is iOS 15+, you can remove the fallback.
+        return UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor() // Fallback for iOS < 15 or if no window found
     }
 }

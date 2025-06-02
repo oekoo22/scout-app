@@ -16,7 +16,7 @@ struct ScoutOrchestratorResponse: Codable, Identifiable {
     let final_path_suggestion: String?
     let status_updates: [String]
     let error_message: String?
-
+    
     private enum CodingKeys: String, CodingKey {
         case original_file, renamed_file, target_folder, final_path_suggestion, status_updates, error_message
     }
@@ -93,30 +93,25 @@ class APIService {
                 return
             }
             
-            guard (200...299).contains(httpResponse.statusCode) else {
-                if let data = data {
-                    do {
-                        let errorResponse = try JSONDecoder().decode(ScoutOrchestratorResponse.self, from: data)
-                        print("Backend error response: \(errorResponse)")
-                        completion(.failure(.invalidResponse))
-                    } catch {
-                        completion(.failure(.invalidResponse))
-                    }
-                } else {
-                    completion(.failure(.invalidResponse))
-                }
+            guard (200...299).contains(httpResponse.statusCode), let data = data else {
+                let errorMessage = "Server returned status \(httpResponse.statusCode)"
+                completion(.failure(.requestFailed(NSError(domain: "APIService.HTTPError", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage]))))
                 return
             }
             
-            guard let data = data else {
-                completion(.failure(.invalidResponse))
-                return
+            // For debugging - print raw JSON
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("APIService: Response JSON: \(jsonString)")
             }
             
             do {
                 let result = try JSONDecoder().decode(ScoutOrchestratorResponse.self, from: data)
                 completion(.success(result))
             } catch {
+                print("APIService: Decoding error: \(error)")
+                if let decodingError = error as? DecodingError {
+                    self.printDetailedDecodingError(decodingError)
+                }
                 completion(.failure(.decodingFailed(error)))
             }
         }
@@ -125,4 +120,32 @@ class APIService {
     }
     
     // Add more API calls here as needed
+
+    // Helper function to print detailed decoding errors (add this inside APIService class)
+    private func printDetailedDecodingError(_ error: DecodingError) {
+        print("APIService: Decoding Error Details:")
+        switch error {
+        case .typeMismatch(let type, let context):
+            print("  Type Mismatch: '\(type)'")
+            print("  CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("  Debug Description: \(context.debugDescription)")
+            if let underlying = context.underlyingError {
+                 print("  Underlying error: \(underlying)")
+            }
+        case .valueNotFound(let type, let context):
+            print("  Value Not Found: '\(type)'")
+            print("  CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("  Debug Description: \(context.debugDescription)")
+        case .keyNotFound(let key, let context):
+            print("  Key Not Found: '\(key.stringValue)'")
+            print("  CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("  Debug Description: \(context.debugDescription)")
+        case .dataCorrupted(let context):
+            print("  Data Corrupted:")
+            print("  CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("  Debug Description: \(context.debugDescription)")
+        @unknown default:
+            print("  Unknown decoding error.")
+        }
+    }
 }

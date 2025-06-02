@@ -13,9 +13,14 @@ struct ContentView: View {
                     Label("API Test", systemImage: "network")
                 }
 
-            DriveProcessorView() // New Tab
+            StringAPITestView()
                 .tabItem {
-                    Label("Google Drive", systemImage: "icloud.and.arrow.down") // Example icon
+                    Label("String API", systemImage: "text.bubble")
+                }
+
+            DriveProcessorView()
+                .tabItem {
+                    Label("Google Drive", systemImage: "icloud.and.arrow.down")
                 }
             
             SettingsView()

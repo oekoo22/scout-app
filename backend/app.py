@@ -52,7 +52,7 @@ async def auth_google_callback(request: Request, code: str = None, state: str = 
         access_token = credentials.token
         redirect_params = {"token": access_token}
         
-        app_redirect_url = f"{app_callback_scheme}://?{urlencode(redirect_params)}"
+        app_redirect_url = f"{app_callback_scheme}://?status=success" # Temporary change for debugging
         
         print(f"Redirecting to Swift app: {app_redirect_url}")
         return RedirectResponse(app_redirect_url)

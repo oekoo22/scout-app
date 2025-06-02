@@ -122,9 +122,29 @@ struct DriveProcessorView: View {
             switch result {
             case .success(let response):
                 var resultText = "🚀 Processing Successful!\n\n"
-                resultText += "📄 Original File: \(response.original_file.name) (ID: \(response.original_file.id))\n"
-                resultText += "✏️ Renamed File: \(response.renamed_file.name) (ID: \(response.renamed_file.id))\n"
-                resultText += "📁 Target Folder: \(response.target_folder.name ?? "N/A") (ID: \(response.target_folder.id ?? "N/A"))\n"
+                
+                // Handle original file display - either as plain string or with ID if different
+                if response.original_file.name == response.original_file.id {
+                    resultText += "📄 Original File: \(response.original_file.name)\n"
+                } else {
+                    resultText += "📄 Original File: \(response.original_file.name) (ID: \(response.original_file.id))\n"
+                }
+                
+                // Handle renamed file display
+                if response.renamed_file.name == response.renamed_file.id {
+                    resultText += "✏️ Renamed File: \(response.renamed_file.name)\n"
+                } else {
+                    resultText += "✏️ Renamed File: \(response.renamed_file.name) (ID: \(response.renamed_file.id))\n"
+                }
+                
+                // Handle target folder display
+                let folderName = response.target_folder.name ?? "N/A"
+                let folderId = response.target_folder.id ?? "N/A"
+                if folderId == folderName {
+                    resultText += "📁 Target Folder: \(folderName)\n"
+                } else {
+                    resultText += "📁 Target Folder: \(folderName) (ID: \(folderId))\n"
+                }
                 
                 if let moveInfo = response.final_path_suggestion {
                      resultText += "➡️ Move Status: \(moveInfo.status ?? "Unknown")\n"

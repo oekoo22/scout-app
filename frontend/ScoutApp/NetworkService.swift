@@ -11,17 +11,90 @@ struct ProcessFileResponse: Codable {
     struct FileInfo: Codable {
         let id: String
         let name: String
+        
+        // Custom initializer for when we have a simple string instead of a structured object
+        init(from decoder: Decoder) throws {
+            // First try to decode as a string
+            do {
+                let container = try decoder.singleValueContainer()
+                if let stringValue = try? container.decode(String.self) {
+                    // If it's a string, use it as both id and name
+                    self.id = stringValue
+                    self.name = stringValue
+                    return
+                }
+            } catch {}
+            
+            // Fall back to normal decoding if not a string
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(String.self, forKey: .id)
+            name = try container.decode(String.self, forKey: .name)
+        }
+        
+        enum CodingKeys: String, CodingKey {
+            case id, name
+        }
     }
+    
     struct FolderInfo: Codable {
         let name: String?
         let id: String?
+        
+        // Custom initializer for when we have a simple string instead of a structured object
+        init(from decoder: Decoder) throws {
+            // First try to decode as a string
+            do {
+                let container = try decoder.singleValueContainer()
+                if let stringValue = try? container.decode(String.self) {
+                    // If it's a string, use it as both id and name
+                    self.id = stringValue
+                    self.name = stringValue
+                    return
+                }
+            } catch {}
+            
+            // Fall back to normal decoding if not a string
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decodeIfPresent(String.self, forKey: .id)
+            name = try container.decodeIfPresent(String.self, forKey: .name)
+        }
+        
+        enum CodingKeys: String, CodingKey {
+            case id, name
+        }
     }
+    
     // Matching the orchestrator's 'final_moved_path_info' which is FileMoveConfirmation model
     struct MovedPathInfo: Codable { 
         let file_id: String?
         let moved_to_folder_id: String?
         let status: String?
         // Add other fields if your FileMoveConfirmation model has more, e.g., new_file_name
+        
+        // Custom initializer for when we have a simple string instead of a structured object
+        init(from decoder: Decoder) throws {
+            // First try to decode as a string
+            do {
+                let container = try decoder.singleValueContainer()
+                if let stringValue = try? container.decode(String.self) {
+                    // If it's a string, use it as status and leave other fields nil
+                    self.status = stringValue
+                    self.file_id = nil
+                    self.moved_to_folder_id = nil
+                    return
+                }
+            } catch {}
+            
+            // Fall back to normal decoding if not a string
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            file_id = try container.decodeIfPresent(String.self, forKey: .file_id)
+            moved_to_folder_id = try container.decodeIfPresent(String.self, forKey: .moved_to_folder_id)
+            status = try container.decodeIfPresent(String.self, forKey: .status)
+        }
+        
+        enum CodingKeys: String, CodingKey {
+            case file_id, moved_to_folder_id, status
+        }
     }
 
     let original_file: FileInfo

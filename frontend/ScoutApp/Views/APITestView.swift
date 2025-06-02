@@ -37,16 +37,27 @@ struct APITestView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Orchestrator Result:").font(.headline)
                             Text("Original File: \(response.original_file)")
-                            response.renamed_file.map { Text("Renamed File: \($0)") }
-                            response.target_folder.map { Text("Target Folder: \($0)") }
-                            response.final_path_suggestion.map { Text("Final Path Suggestion: \($0)") }
+                            
+                            if let renamedFile = response.renamed_file {
+                                Text("Renamed File: \(renamedFile)")
+                            }
+                            
+                            if let targetFolder = response.target_folder {
+                                Text("Target Folder: \(targetFolder)")
+                            }
+                            
+                            if let finalPathSuggestion = response.final_path_suggestion {
+                                Text("Final Path Suggestion: \(finalPathSuggestion)")
+                            }
                             
                             Text("Status Updates:").font(.subheadline)
                             ForEach(response.status_updates, id: \.self) {
                                 Text("- \($0)")
                             }
                             
-                            response.error_message.map { Text("Error Message: \($0)").foregroundColor(.red) }
+                            if let errorMsg = response.error_message, !errorMsg.isEmpty {
+                                Text("Error Message: \(errorMsg)").foregroundColor(.red)
+                            }
                         }
                         .padding()
                     }
