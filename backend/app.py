@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -96,6 +96,68 @@ async def trigger_orchestrator_endpoint(payload: OrchestratorRequest):
         return OrchestratorResponse(
             original_file=payload.file_name,
             status_updates=[f"Endpoint error: {str(e)}"],
+            error_message=str(e)
+        )
+
+# New endpoint to handle PDF uploads from the mobile app
+@app.post("/upload-pdf", response_model=OrchestratorResponse)
+async def upload_pdf_endpoint(file: UploadFile = File(...)):
+    drive_service = get_drive_service()
+    if not drive_service:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated with Google Drive. Please authenticate via /auth/google endpoint."
+        )
+
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be a PDF"
+        )
+
+    try:
+        # Save the uploaded PDF temporarily
+        import tempfile
+        import os
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+
+        # Upload to Google Drive first
+        from googleapiclient.http import MediaFileUpload
+        
+        file_metadata = {
+            'name': file.filename,
+            'parents': []  # Will be organized by the orchestrator
+        }
+        
+        media = MediaFileUpload(temp_file_path, mimetype='application/pdf')
+        uploaded_file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        file_id = uploaded_file.get('id')
+        
+        # Clean up temp file
+        os.unlink(temp_file_path)
+        
+        # Now run the orchestrator on the uploaded file
+        result_dict = await run_scout_orchestration(
+            file_id_to_process=file_id, 
+            drive_service=drive_service,
+            original_file_name=file.filename 
+        )
+        return OrchestratorResponse(**result_dict)
+        
+    except Exception as e:
+        print(f"Error in /upload-pdf endpoint: {e}")
+        return OrchestratorResponse(
+            original_file=file.filename,
+            status_updates=[f"Upload error: {str(e)}"],
             error_message=str(e)
         )
 

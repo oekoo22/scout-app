@@ -119,6 +119,58 @@ class APIService {
         task.resume()
     }
     
+    func uploadPDF(pdfData: Data, fileName: String, completion: @escaping (Result<ScoutOrchestratorResponse, APIError>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/upload-pdf") else {
+            completion(.failure(.invalidURL))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // Add file data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/pdf\r\n\r\n".data(using: .utf8)!)
+        body.append(pdfData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode), let data = data else {
+                let errorMessage = "Server returned status \(httpResponse.statusCode)"
+                completion(.failure(.requestFailed(NSError(domain: "APIService.HTTPError", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage]))))
+                return
+            }
+            
+            do {
+                let result = try JSONDecoder().decode(ScoutOrchestratorResponse.self, from: data)
+                completion(.success(result))
+            } catch {
+                completion(.failure(.decodingFailed(error)))
+            }
+        }
+        
+        task.resume()
+    }
+    
     // Add more API calls here as needed
 
     // Helper function to print detailed decoding errors (add this inside APIService class)
