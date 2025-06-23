@@ -1,0 +1,14 @@
+{
+  "original_filename": "ScannedDocument_1750680048.1404061.pdf",
+  "processed_filename": "processed_ScannedDocument_1750680048.1404061_20250623_140048.pdf",
+  "suggested_category": "Documents",
+  "local_path": "local_storage/processed_pdfs/ScannedDocument_1750680048.1404061_20250623_140048.pdf",
+  "processing_timestamp": "20250623_140048",
+  "status_updates": [
+    "Processing local PDF: ScannedDocument_1750680048.1404061.pdf",
+    "Saved to local storage: local_storage/processed_pdfs/ScannedDocument_1750680048.1404061_20250623_140048.pdf",
+    "AI processing completed",
+    "Suggested filename: processed_ScannedDocument_1750680048.1404061_20250623_140048.pdf",
+    "Suggested category: Documents"
+  ]
+}

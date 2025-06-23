@@ -23,7 +23,9 @@
       "Bash(SCOUT_USE_LOCAL_IP=true python3 -c \"from config import config; print(''Config loaded with local IP enabled''); print(f''OAuth Redirect URI: {config.oauth_redirect_uri}''); print(f''Base URL: {config._get_base_url()}''); print(f''Local IP: {config.local_ip}'')\")",
       "Bash(SCOUT_USE_LOCAL_IP=true python3 -c \"from config import config; print('Config loaded with local IP enabled'); print(f'OAuth Redirect URI: {config.oauth_redirect_uri}'); print(f'Base URL: {config._get_base_url()}'); print(f'Local IP: {config.local_ip}')\")",
       "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python3 -c \"from config import config; print('Config loaded with local IP and OAuth host override'); print(f'OAuth Redirect URI: {config.oauth_redirect_uri}'); print(f'Base URL: {config._get_base_url()}'); print(f'Local IP: {config.local_ip}')\")",
-      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python3 -c \"from google_drive_auth import get_redirect_uri; print(f'Google Auth Redirect URI: {get_redirect_uri()}')\")"
+      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python3 -c \"from google_drive_auth import get_redirect_uri; print(f'Google Auth Redirect URI: {get_redirect_uri()}')\")",
+      "Bash(mkdir:*)",
+      "Bash(source:*)"
     ],
     "deny": []
   }

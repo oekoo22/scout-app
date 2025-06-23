@@ -95,14 +95,14 @@ struct ScannerView: View {
         }
         
         await MainActor.run {
-            APIService.shared.uploadPDF(pdfData: pdfData, fileName: fileName) { result in
+            APIService.shared.processLocalPDF(pdfData: pdfData, fileName: fileName) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let response):
-                        print("PDF uploaded successfully: \(response)")
+                        print("PDF processed locally: \(response)")
                         // Show success message to user
                     case .failure(let error):
-                        print("Failed to upload PDF: \(error)")
+                        print("Failed to process PDF: \(error)")
                         // Show error message to user
                     }
                 }
