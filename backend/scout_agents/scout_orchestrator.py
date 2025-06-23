@@ -1,5 +1,6 @@
 from agents import Agent, Runner, set_default_openai_key, trace, ItemHelpers
 from dotenv import load_dotenv
+from openai import OpenAI
 import os
 import asyncio
 from scout_agents.reader_agent import reader_agent
@@ -12,6 +13,8 @@ load_dotenv()
 # Set the default OpenAI key
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 # Run with python -m backend.agents.scout_orchestrator
 async def main(pdf_file_path: str, original_file_name: str, use_local_processing: bool = True):
     status_updates = []
@@ -22,6 +25,11 @@ async def main(pdf_file_path: str, original_file_name: str, use_local_processing
     final_target_folder_name = None
     final_target_folder_path = None # Local folder path instead of ID
     final_moved_path_info = None # Local file path after move
+
+    current_file_path = client.files.create(
+        file=open(current_file_path, "rb"),
+        purpose="vision"
+    )
 
     try:
         with trace("Scout Orchestrator Local PDF Trace"):
