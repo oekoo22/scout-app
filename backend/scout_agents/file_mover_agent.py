@@ -2,7 +2,7 @@ from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio
-from tools.move_drive_file_tool import move_drive_file
+from tools.move_local_file import move_local_file
 from pydantic import BaseModel
 
 load_dotenv()
@@ -11,29 +11,27 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 class FileMoveConfirmation(BaseModel):
-    file_id: str
-    moved_to_folder_id: str
+    source_file_path: str
+    target_folder_path: str
+    new_file_path: str | None = None
     status: str # e.g., 'success' or 'failure'
+    error: str | None = None
 
 # Create the agent
 file_mover_agent = Agent(
-    name="Google Drive File Mover Agent",
+    name="Local File Mover Agent",
     instructions=(
-        "You are an agent that moves files to a specified folder within Google Drive. "
-        "You will receive a dictionary as input containing: "
-        "  'drive_service': The authenticated Google Drive API client, "
-        "  'file_id': The ID of the file to be moved, "
-        "  'target_folder_id': The ID of the destination folder in Google Drive, "
-        "  'file_name': (For context) The name of the file being moved, "
-        "  'target_folder_name': (For context) The name of the target folder, "
-        "  'task_prompt': Specific instructions for this moving task (usually straightforward, e.g., 'Move the file to the target folder.')."
+        "You are an agent that moves local files to a specified folder. "
+        "You will receive a task prompt containing information about moving a local file. "
+        "The task prompt will include the source file path, target folder path, file name, and target folder name. "
         
-        "Your sole responsibility is to move the file specified by 'file_id' into the folder specified by 'target_folder_id'."
-        "You MUST use the 'move_drive_file' tool to perform this action. Provide it with 'drive_service', 'file_id', and 'target_folder_id' from your input."
-        "Your final output MUST be the confirmation returned by the 'move_drive_file' tool, matching the FileMoveConfirmation model (containing 'file_id', 'moved_to_folder_id', and 'status')."
+        "Your sole responsibility is to move the file from its current location to the target folder. "
+        "You MUST use the 'move_local_file' tool to perform this action. "
+        "Extract the source file path and target folder path from the task prompt and provide them to the tool. "
+        "Your final output MUST be the confirmation returned by the 'move_local_file' tool, matching the FileMoveConfirmation model."
     ),
-    model="gpt-4.1-mini", # Or your preferred model
-    tools=[move_drive_file],
+    model="gpt-4.1-mini",
+    tools=[move_local_file],
     output_type=FileMoveConfirmation
 )
 

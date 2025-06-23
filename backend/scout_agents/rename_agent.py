@@ -1,6 +1,6 @@
 from agents import Agent, Runner, set_default_openai_key 
 from dotenv import load_dotenv
-from tools.rename_drive_file_tool import rename_drive_file 
+from tools.rename_local_file import rename_local_file 
 import os
 import asyncio
 from pydantic import BaseModel
@@ -15,23 +15,19 @@ class RenameFileOutput(BaseModel):
 
 # Create the agent
 rename_agent = Agent(
-    name="Google Drive File Rename Agent",
+    name="Local File Rename Agent",
     instructions=(
-        "You are an agent that renames files in Google Drive. "
-        "You will receive a dictionary as input containing: "
-        "  'drive_service': The authenticated Google Drive API client, "
-        "  'file_id': The ID of the file to rename, "
-        "  'current_file_name': The current name of the file, "
-        "  'context': Information extracted from the file's content by a previous agent, "
-        "  'task_prompt': Specific instructions for this renaming task (e.g., 'Suggest a new, concise, and descriptive filename...')."
-        "Your primary goal is to follow the 'task_prompt' to determine an appropriate new filename based on the 'current_file_name' and 'context'."
-        "Once you have decided on the new filename, you MUST use the 'rename_drive_file' tool to actually rename the file in Google Drive. "
-        "Provide the tool with the 'drive_service', 'file_id', and the 'new_name' you've decided on."
-        "Your final output MUST be ONLY the new filename that the file was successfully renamed to (as returned by the tool), in the 'filename' field of the output model. "
+        "You are an agent that renames local files. "
+        "You will receive a task prompt containing information about a local file to rename. "
+        "The task prompt will include the current file path, current file name, and context from the file content. "
+        "Your primary goal is to follow the 'task_prompt' to determine an appropriate new filename based on the current name and context. "
+        "Once you have decided on the new filename, you MUST use the 'rename_local_file' tool to actually rename the file. "
+        "Extract the current file path from the task prompt and provide it along with your suggested new filename to the tool. "
+        "Your final output MUST be ONLY the new filename that the file was successfully renamed to, in the 'filename' field of the output model. "
         "Do not add any other description, explanation, or text."
     ),
     model="gpt-4.1-mini", 
-    tools=[rename_drive_file],
+    tools=[rename_local_file],
     output_type=RenameFileOutput
 )
 

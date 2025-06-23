@@ -2,8 +2,8 @@ from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio
-from tools.search_drive_folders_tool import search_drive_folders
-from tools.create_drive_folder_tool import create_drive_folder
+from tools.search_local_folders import search_local_folders
+from tools.create_local_folder import create_local_folder
 from pydantic import BaseModel
 
 load_dotenv()
@@ -11,34 +11,31 @@ load_dotenv()
 # Set the default OpenAI key
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
-class DriveFolderOutput(BaseModel):
+class LocalFolderOutput(BaseModel):
     folder_name: str
-    folder_id: str
+    folder_path: str
 
 folder_agent = Agent(
-    name="Google Drive Folder Agent",
+    name="Local Folder Agent",
     instructions=(
-        "You are an agent that determines or creates an appropriate folder in Google Drive for a given file. "
-        "You will receive a dictionary as input containing: "
-        "  'drive_service': The authenticated Google Drive API client, "
-        "  'file_id': The ID of the file being processed (for context, not direct action by this agent), "
-        "  'file_name': The name of the file being processed, "
-        "  'context': Information extracted from the file's content by a previous agent, "
-        "  'task_prompt': Specific instructions for folder selection/creation (e.g., 'Find or create a folder named ProjectX for this file.')."
+        "You are an agent that determines or creates an appropriate local folder for organizing a given file. "
+        "You will receive a task prompt containing information about a local file to organize. "
+        "The task prompt will include the file path, file name, and context from the file content. "
         
         "Your process is as follows:"
-        "1. Based on the 'file_name', 'context', and 'task_prompt', determine the ideal target folder name. The 'task_prompt' is the primary guide for the folder name."
-        "2. Use the 'search_drive_folders' tool with the 'drive_service' and the determined folder name (or a relevant query derived from it) to check if a suitable folder already exists. "
-        "   If multiple folders are returned, use the 'task_prompt' and your judgment to select the most appropriate one. An exact name match is preferred if available."
-        "3. If a suitable existing folder is found and selected, use its 'name' and 'id' for your output."
-        "4. If no suitable folder is found, or if the 'task_prompt' explicitly directs creation, use the 'create_drive_folder' tool. "
-        "   Provide it with 'drive_service' and the target folder name. You can optionally specify 'parent_folder_id' if the 'task_prompt' gives clear instructions for a nested structure, otherwise, the folder will be created in the root."
-        "5. Your final output MUST be the 'folder_name' and 'folder_id' of the selected or newly created folder, matching the DriveFolderOutput model."
-        "   Ensure the 'folder_id' is the actual ID from Google Drive."
+        "1. Based on the file name, context, and task prompt, determine the ideal target folder name. The task prompt is the primary guide for the folder name."
+        "2. Extract the base directory from the file path (usually the directory containing the file). "
+        "3. Use the 'search_local_folders' tool with the base directory and the determined folder name to check if a suitable folder already exists. "
+        "   If multiple folders are returned, select the most appropriate one based on exact or close name matching."
+        "4. If a suitable existing folder is found, use its name and path for your output."
+        "5. If no suitable folder is found, use the 'create_local_folder' tool to create a new folder. "
+        "   Provide it with the base directory and the target folder name."
+        "6. Your final output MUST be the 'folder_name' and 'folder_path' of the selected or newly created folder, matching the LocalFolderOutput model."
+        "   The folder_path should be the full absolute path to the folder."
     ),
     model="gpt-4.1-mini",
-    tools=[search_drive_folders, create_drive_folder],
-    output_type=DriveFolderOutput
+    tools=[search_local_folders, create_local_folder],
+    output_type=LocalFolderOutput
 )
 
 # async def main():

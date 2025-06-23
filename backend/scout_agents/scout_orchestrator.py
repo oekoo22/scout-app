@@ -13,27 +13,27 @@ load_dotenv()
 set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 # Run with python -m backend.agents.scout_orchestrator
-async def main(file_id_to_process: str, drive_service: object, original_file_name: str):
+async def main(pdf_file_path: str, original_file_name: str, use_local_processing: bool = True):
     status_updates = []
     error_message = None
-    current_file_id = file_id_to_process
+    current_file_path = pdf_file_path
     current_file_name = original_file_name if original_file_name else "unknown_file" # Fallback if not provided
     final_renamed_name = current_file_name # Initialize with original or fallback name
     final_target_folder_name = None
-    final_target_folder_id = None # We might get an ID from folder_agent
-    final_moved_path_info = None # Could be new parent ID or confirmation
+    final_target_folder_path = None # Local folder path instead of ID
+    final_moved_path_info = None # Local file path after move
 
     try:
-        with trace("Scout Orchestrator Google Drive Trace"):
-            status_updates.append(f"Starting Drive orchestration for file ID: {current_file_id}, original name: {current_file_name}")
+        with trace("Scout Orchestrator Local PDF Trace"):
+            status_updates.append(f"Starting local PDF orchestration for file: {current_file_path}, original name: {current_file_name}")
 
-            # Wrap payload in a list of a user message dictionary
+            # Process local PDF file
             try:
-                status_updates.append(f"Running Reader Agent for file: {current_file_id}")
+                status_updates.append(f"Running Reader Agent for file: {current_file_path}")
                 reader_payload = {
-                    "file_id": current_file_id,
+                    "file_path": current_file_path,
                     "original_file_name": current_file_name,
-                    "task_prompt": f"Read the content of Google Drive file with ID '{current_file_id}' (original name: '{current_file_name}') and extract key information for organization."
+                    "task_prompt": f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization."
                 }
                 read_file_run = await Runner.run(
                     reader_agent, 
@@ -53,10 +53,10 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
             try:
                 status_updates.append(f"Running Rename Agent for file: {current_file_name}")
                 rename_payload = {
-                    "file_id": current_file_id,
+                    "file_path": current_file_path,
                     "current_file_name": current_file_name,
                     "context": context_for_agents,
-                    "task_prompt": f"Based on the context ('{context_for_agents[:200]}...') and current name, suggest a new, concise, and descriptive filename for the Google Drive file '{current_file_name}' (ID: '{current_file_id}'). Output only the new filename."
+                    "task_prompt": f"Based on the context ('{context_for_agents[:200]}...') and current name, suggest a new, concise, and descriptive filename for the local PDF file '{current_file_name}' at '{current_file_path}'. Output only the new filename."
                 }
                 rename_file_run = await Runner.run(
                     rename_agent, 
@@ -69,7 +69,12 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                     status_updates.append(f"Rename agent suggested new name: '{final_renamed_name}'")
                 else:
                     status_updates.append(f"Rename agent did not return a valid new filename (got: {renamed_file_info}), using current name: {current_file_name}")
-                # Note: actual rename operation happens within the agent. File ID typically doesn't change.
+                # Note: actual rename operation happens within the agent. File path may change.
+                # Update the current file path if rename was successful
+                if final_renamed_name != current_file_name:
+                    import os
+                    current_file_dir = os.path.dirname(current_file_path)
+                    current_file_path = os.path.join(current_file_dir, final_renamed_name)
                 current_file_name = final_renamed_name # Update current name for subsequent agents
             except Exception as e:
                 error_message = str(e)
@@ -78,10 +83,10 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
 
             # 3. Folder Agent
             folder_payload = {
-                "file_id": current_file_id, 
+                "file_path": current_file_path, 
                 "file_name": current_file_name, 
                 "context": context_for_agents, # Pass the extracted string content
-                "task_prompt": f"Based on the content and name ('{current_file_name}') of Google Drive file ID '{current_file_id}', determine a suitable Google Drive folder. If a relevant folder like 'Project Reports' or 'Invoices' exists, use it. Otherwise, create a new folder with an appropriate name. Output the folder name and ID."
+                "task_prompt": f"Based on the content and name ('{current_file_name}') of local PDF file '{current_file_path}', determine a suitable local folder structure. If a relevant folder like 'Project Reports' or 'Invoices' exists, use it. Otherwise, create a new folder with an appropriate name. Output the folder name and path."
             }
             try:
                 status_updates.append(f"Running Folder Agent for file: {current_file_name}")
@@ -90,34 +95,34 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                     folder_payload["task_prompt"]
                 )
                 folder_info = folder_suggestion_run.final_output
-                # Extract folder_name and folder_id from folder_agent's output (DriveFolderOutput(folder_name: str, folder_id: str))
-                if hasattr(folder_info, 'folder_name') and hasattr(folder_info, 'folder_id'):
+                # Extract folder_name and folder_path from folder_agent's output (LocalFolderOutput(folder_name: str, folder_path: str))
+                if hasattr(folder_info, 'folder_name') and hasattr(folder_info, 'folder_path'):
                     final_target_folder_name = getattr(folder_info, 'folder_name', None)
-                    final_target_folder_id = getattr(folder_info, 'folder_id', None)
-                    if not final_target_folder_name or not final_target_folder_id:
-                        status_updates.append(f"Folder agent returned incomplete data: Name='{final_target_folder_name}', ID='{final_target_folder_id}'. Cannot proceed with move.")
-                        raise ValueError(f"Folder agent did not return a valid folder name and ID. Got: Name='{final_target_folder_name}', ID='{final_target_folder_id}'")
+                    final_target_folder_path = getattr(folder_info, 'folder_path', None)
+                    if not final_target_folder_name or not final_target_folder_path:
+                        status_updates.append(f"Folder agent returned incomplete data: Name='{final_target_folder_name}', Path='{final_target_folder_path}'. Cannot proceed with move.")
+                        raise ValueError(f"Folder agent did not return a valid folder name and path. Got: Name='{final_target_folder_name}', Path='{final_target_folder_path}'")
                 else:
-                    status_updates.append(f"Folder agent did not return expected DriveFolderOutput. Got: {folder_info}. Cannot proceed with move.")
-                    raise ValueError(f"Folder agent did not return expected DriveFolderOutput. Got: {folder_info}")
-                status_updates.append(f"File '{current_file_name}' (ID: {current_file_id}) to be organized in folder: '{final_target_folder_name}' (ID: {final_target_folder_id}) ")
+                    status_updates.append(f"Folder agent did not return expected LocalFolderOutput. Got: {folder_info}. Cannot proceed with move.")
+                    raise ValueError(f"Folder agent did not return expected LocalFolderOutput. Got: {folder_info}")
+                status_updates.append(f"File '{current_file_name}' at '{current_file_path}' to be organized in folder: '{final_target_folder_name}' (Path: {final_target_folder_path}) ")
             except Exception as e:
                 error_message = str(e)
                 status_updates.append(f"Error during Folder Agent execution: {error_message}")
                 raise
 
             # 4. File Mover Agent
-            # Ensure final_target_folder_id is valid before attempting move
-            if not final_target_folder_id:
-                status_updates.append(f"Cannot move file: Target folder ID is missing. Skipping move operation.")
-                final_moved_path_info = {"status": "skipped", "reason": "Missing target folder ID"}
+            # Ensure final_target_folder_path is valid before attempting move
+            if not final_target_folder_path:
+                status_updates.append(f"Cannot move file: Target folder path is missing. Skipping move operation.")
+                final_moved_path_info = {"status": "skipped", "reason": "Missing target folder path"}
             else:
                 mover_payload = {
-                    "file_id": current_file_id,
+                    "file_path": current_file_path,
                     "file_name": current_file_name,
                     "target_folder_name": final_target_folder_name,
-                    "target_folder_id": final_target_folder_id, 
-                    "task_prompt": f"Move the Google Drive file '{current_file_name}' (ID: '{current_file_id}') into the Google Drive folder named '{final_target_folder_name}' (ID: '{final_target_folder_id}'). Confirm success or report issues."
+                    "target_folder_path": final_target_folder_path, 
+                    "task_prompt": f"Move the local PDF file '{current_file_name}' from '{current_file_path}' into the local folder named '{final_target_folder_name}' (Path: '{final_target_folder_path}'). Confirm success or report issues."
                 }
                 try:
                     status_updates.append(f"Running File Mover Agent for file: {current_file_name} to folder: {final_target_folder_name}")
@@ -132,7 +137,7 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
                     status_updates.append(f"Error during File Mover Agent execution: {error_message}")
                     raise
             
-            status_updates.append("Google Drive orchestration completed.")
+            status_updates.append("Local PDF orchestration completed.")
 
     except Exception as e:
         error_message = str(e)
@@ -157,7 +162,7 @@ async def main(file_id_to_process: str, drive_service: object, original_file_nam
         final_path_suggestion_str = f"Move status: {fmpi_status}. Details: {fmpi_detail}"
 
     return {
-        "original_file": original_file_name or file_id_to_process, # String
+        "original_file": original_file_name or os.path.basename(pdf_file_path), # String
         "renamed_file": final_renamed_name, # String
         "target_folder": final_target_folder_name, # String (can be None)
         "final_path_suggestion": final_path_suggestion_str, # String (can be None)

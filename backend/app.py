@@ -85,11 +85,16 @@ async def trigger_orchestrator_endpoint(payload: OrchestratorRequest):
         )
 
     try:
-        result_dict = await run_scout_orchestration(
-            file_id_to_process=payload.file_name, 
-            drive_service=drive_service,
-            original_file_name=payload.file_name 
-        )
+        # This endpoint is for Google Drive file processing by ID
+        # For now, we'll return an error since we've updated the orchestrator for local files
+        result_dict = {
+            "original_file": payload.file_name,
+            "renamed_file": None,
+            "target_folder": None,
+            "final_path_suggestion": None,
+            "status_updates": ["Error: This endpoint is deprecated. Use /upload-pdf or /process-local-pdf instead."],
+            "error_message": "This endpoint is deprecated. Use /upload-pdf or /process-local-pdf instead."
+        }
         return OrchestratorResponse(**result_dict)
     except Exception as e:
         print(f"Error in /process-file endpoint: {e}")
@@ -145,12 +150,35 @@ async def upload_pdf_endpoint(file: UploadFile = File(...)):
         # Clean up temp file
         os.unlink(temp_file_path)
         
-        # Now run the orchestrator on the uploaded file
-        result_dict = await run_scout_orchestration(
-            file_id_to_process=file_id, 
-            drive_service=drive_service,
-            original_file_name=file.filename 
-        )
+        # For Google Drive uploads, we need to download the file locally first
+        # then process it with our local orchestrator
+        import tempfile
+        from googleapiclient.http import MediaIoBaseDownload
+        import io
+        
+        # Download the uploaded file from Google Drive to process locally
+        request = drive_service.files().get_media(fileId=file_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+        
+        # Save to a temporary local file for processing
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_local_file:
+            temp_local_file.write(fh.getvalue())
+            temp_local_file_path = temp_local_file.name
+        
+        try:
+            # Run the local orchestrator on the downloaded file
+            result_dict = await run_scout_orchestration(
+                pdf_file_path=temp_local_file_path,
+                original_file_name=file.filename,
+                use_local_processing=True
+            )
+        finally:
+            # Clean up the temporary file
+            os.unlink(temp_local_file_path)
         return OrchestratorResponse(**result_dict)
         
     except Exception as e:
@@ -190,54 +218,19 @@ async def process_local_pdf_endpoint(file: UploadFile = File(...)):
         with open(local_file_path, 'wb') as f:
             f.write(content)
         
-        # Create a mock drive service for local processing
-        # This allows us to run the orchestrator logic without actual Google Drive operations
-        class MockDriveService:
-            def __init__(self, local_file_path, filename):
-                self.local_file_path = local_file_path
-                self.filename = filename
-                
-            def files(self):
-                return self
-                
-            def get(self, fileId, **kwargs):
-                return self
-                
-            def execute(self):
-                # Return mock file metadata
-                return {
-                    'id': f'local_{timestamp}',
-                    'name': self.filename,
-                    'mimeType': 'application/pdf'
-                }
-                
-            def get_media(self, fileId):
-                return self
-                
-        mock_drive_service = MockDriveService(local_file_path, file.filename)
-        
-        # Run a simplified version of the orchestration for local files
-        status_updates = []
-        status_updates.append(f"Processing local PDF: {file.filename}")
-        status_updates.append(f"Saved to local storage: {local_file_path}")
-        
-        # For now, we'll return basic processing results
-        # In a full implementation, you could adapt the scout_orchestrator to work with local files
-        processed_filename = f"processed_{unique_filename}"
-        suggested_category = "Documents"  # This would come from AI processing
-        
-        status_updates.append(f"AI processing completed")
-        status_updates.append(f"Suggested filename: {processed_filename}")
-        status_updates.append(f"Suggested category: {suggested_category}")
+        # Run the full orchestration for local files using the updated scout_orchestrator
+        result_dict = await run_scout_orchestration(
+            pdf_file_path=local_file_path,
+            original_file_name=file.filename,
+            use_local_processing=True
+        )
         
         # Save metadata alongside the PDF
         metadata = {
             "original_filename": file.filename,
-            "processed_filename": processed_filename,
-            "suggested_category": suggested_category,
             "local_path": local_file_path,
             "processing_timestamp": timestamp,
-            "status_updates": status_updates
+            **result_dict  # Include all orchestration results
         }
         
         import json
@@ -245,14 +238,7 @@ async def process_local_pdf_endpoint(file: UploadFile = File(...)):
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
         
-        return OrchestratorResponse(
-            original_file=file.filename,
-            renamed_file=processed_filename,
-            target_folder=suggested_category,
-            final_path_suggestion=f"Local storage: {local_file_path}",
-            status_updates=status_updates,
-            error_message=None
-        )
+        return OrchestratorResponse(**result_dict)
         
     except Exception as e:
         print(f"Error in /process-local-pdf endpoint: {e}")

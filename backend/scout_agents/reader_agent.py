@@ -2,7 +2,7 @@ from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio
-from tools.read_drive_file_content_tool import get_drive_file_text_content
+from tools.read_local_pdf import read_local_pdf
 from pydantic import BaseModel
 
 load_dotenv()
@@ -18,24 +18,24 @@ class ExtractedContent(BaseModel):
 
 # Create the agent
 reader_agent = Agent(
-    name="Google Drive File Reader Agent",
+    name="Local PDF File Reader Agent",
     instructions=(
-        "You are an agent that processes files stored in Google Drive. "
-        "You will receive a dictionary as input containing 'drive_service' (an authenticated Google Drive API client), "
-        "'file_id' (the ID of the file to process), and 'task_prompt' (specific instructions for this task)."
-        "Your primary goal is to follow the 'task_prompt'. To do this, you MUST use the 'get_drive_file_text_content' tool "
-        "to fetch and extract text content from the specified Google Drive file using the provided 'drive_service' and 'file_id'."
-        "After obtaining the text content, analyze it based on the 'task_prompt' (e.g., summarize, extract keywords, etc.)."
-        "Your final output should be the processed information (e.g., keywords, summary) as a string in the 'content' field of the output model."
+        "You are an agent that processes local PDF files. "
+        "You will receive a task prompt containing the path to a local PDF file to process. "
+        "Your primary goal is to follow the 'task_prompt'. To do this, you MUST use the 'read_local_pdf' tool "
+        "to fetch and extract text content from the specified local PDF file using the file path. "
+        "The read_local_pdf tool expects the full file path as provided in the task prompt. "
+        "After obtaining the text content, analyze it based on the 'task_prompt' (e.g., summarize, extract keywords, etc.). "
+        "Your final output should be the processed information (e.g., keywords, summary) as a string in the 'content' field of the output model. "
         "Focus on extracting one or two main keywords or a very short summary as per the typical task prompt unless specified otherwise."
     ),
     model="gpt-4.1-mini", 
-    tools=[get_drive_file_text_content],
+    tools=[read_local_pdf],
     output_type=ExtractedContent 
 )
 
 async def main():
-    test_run = await Runner.run(reader_agent, "Read the file 'downloaded_test_file_1.pdf' in the assets folder.")
+    test_run = await Runner.run(reader_agent, "Read the local PDF file 'downloaded_test_file_1.pdf' and extract key information for organization.")
     print(test_run.final_output)
 
 if __name__ == "__main__":
