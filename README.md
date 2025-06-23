@@ -1,36 +1,84 @@
-# Scout App
+# Scout App - Document Scanner with AI Processing
 
-A mobile document processing application with AI-powered organization using Google Drive integration.
+A mobile iOS app that scans documents, converts them to PDF, and processes them using AI-powered backend services. Supports both local storage and Google Drive integration.
 
-## Architecture
+## 🏗️ Architecture
 
-- **Backend**: Python FastAPI server with Google Drive API integration
-- **Frontend**: SwiftUI iOS app with camera scanning capabilities
-- **AI Processing**: OpenAI agents for document analysis and organization
+- **Frontend**: iOS app built with SwiftUI and VisionKit for document scanning
+- **Backend**: Python FastAPI server with AI-powered document processing
+- **Storage**: Local file system + optional Google Drive integration
+- **AI Processing**: Document analysis, intelligent naming, and categorization
+- **Network**: Local network communication between iOS device and Mac backend
 
-## Quick Start
+## 📋 Prerequisites
 
-### 1. Initial Setup
+### macOS Development Machine
+- **macOS** 12.0 or later
+- **Python 3.8+** installed
+- **Xcode 14.0+** for iOS development
+- **Git** for version control
+
+### iOS Device/Simulator
+- **iOS 15.0+** for running the app
+- **Same WiFi network** as development machine (for device testing)
+
+### API Keys (Optional)
+- **OpenAI API Key** for advanced AI processing features
+
+## 🚀 Quick Start
+
+### 1. Clone the Repository
 ```bash
+git clone [your-repo-url]
+cd scout-app
+```
+
+### 2. Automated Setup (Recommended)
+```bash
+chmod +x setup.sh
 ./setup.sh
 ```
 
-### 2. Development Mode (iOS Simulator)
+### 3. Configure Network for Mobile Device
 ```bash
-./start_dev.sh
+chmod +x configure_network.sh
+./configure_network.sh
 ```
 
-### 3. Mobile Testing Mode (Physical Device)
+### 4. Start Development Server
 ```bash
-./start_mobile.sh
+./start_backend.sh
 ```
 
-## Features
+### 5. Build and Run iOS App
+1. Open `frontend/ScoutApp.xcodeproj` in Xcode
+2. Select your target device/simulator
+3. Build and run (⌘+R)
 
-### Mobile OAuth Fix ✅
-- **Problem**: Mobile devices couldn't access OAuth redirect at `localhost:8000`
-- **Solution**: Dynamic configuration supporting both localhost and local network IP
-- **Usage**: Scripts automatically detect and configure the correct IP address
+## ✨ Features
+
+### 📱 Document Scanning
+- **VisionKit Integration**: Native iOS document scanner with automatic edge detection
+- **Multi-page Support**: Scan multiple pages into a single PDF
+- **Camera Integration**: Capture individual photos and convert to PDF
+- **Real-time Preview**: Review scanned content before processing
+
+### 🤖 AI-Powered Processing
+- **Intelligent Naming**: AI suggests meaningful filenames based on content
+- **Smart Categorization**: Automatic folder organization suggestions
+- **Content Analysis**: Extract key information from scanned documents
+
+### 💾 Flexible Storage Options
+- **Local Storage**: All PDFs saved locally on both device and backend
+- **Google Drive Integration**: Optional cloud sync and organization
+- **Metadata Tracking**: JSON metadata files with processing history
+- **No Lock-in**: Documents accessible without the app
+
+### 🌐 Network Communication
+- **Local Network**: Secure communication between iOS device and Mac
+- **Auto-configuration**: Scripts automatically detect and configure IP addresses
+- **Development Mode**: Localhost support for iOS Simulator testing
+- **Mobile Support**: Network IP configuration for physical device testing
 
 ### Configuration System
 - Environment-based configuration (development/production)
@@ -177,7 +225,3 @@ Open `frontend/ScoutApp.xcodeproj` in Xcode
 2. Add iOS networking code in `APIService.swift`
 3. Update configuration if needed
 4. Test in both development and mobile modes
-
-## License
-
-[Your license here]
