@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import asyncio
 from tools.read_local_pdf import read_local_pdf
+from tools.analyze_pdf_images import analyze_pdf_images
 from pydantic import BaseModel
 
 load_dotenv()
@@ -20,17 +21,20 @@ class ExtractedContent(BaseModel):
 reader_agent = Agent(
     name="Local PDF File Reader Agent",
     instructions=(
-        "You are an agent that processes local PDF files. "
-        "You will receive a task prompt containing the path to a local PDF file to process. "
-        "Your primary goal is to follow the 'task_prompt'. To do this, you MUST use the 'read_local_pdf' tool "
-        "to fetch and extract text content from the specified local PDF file using the file path. "
-        "The read_local_pdf tool expects the full file path as provided in the task prompt. "
-        "After obtaining the text content, analyze it based on the 'task_prompt' (e.g., summarize, extract keywords, etc.). "
-        "Your final output should be the processed information (e.g., keywords, summary) as a string in the 'content' field of the output model. "
-        "Focus on extracting one or two main keywords or a very short summary as per the typical task prompt unless specified otherwise."
+        "You are an agent that processes local PDF files for organization purposes. "
+        "You have access to two tools: 'read_local_pdf' for text extraction and 'analyze_pdf_images' for vision analysis. "
+        "Your primary goal is to follow the 'task_prompt' instructions. "
+        "PROCESSING APPROACH: "
+        "1. If the task prompt contains PDF images data (JSON string), use 'analyze_pdf_images' tool to get visual understanding of the PDF content. "
+        "2. Always use 'read_local_pdf' tool to extract text content from the PDF file path provided in the task prompt. "
+        "3. Combine both vision analysis and text extraction to provide comprehensive understanding. "
+        "4. If no images data is provided, rely solely on text extraction using 'read_local_pdf' tool. "
+        "FOCUS: Identify document type, main topics, key information, and suitable organizational categories. "
+        "OUTPUT: Your final output should be comprehensive information about the document content in the 'content' field, suitable for file organization and categorization. "
+        "Be thorough but concise, focusing on the most important aspects for organizing and categorizing the file."
     ),
     model="gpt-4.1-mini", 
-    tools=[read_local_pdf],
+    tools=[read_local_pdf, analyze_pdf_images],
     output_type=ExtractedContent 
 )
 

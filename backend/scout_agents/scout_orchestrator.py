@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import os
 import asyncio
+import base64
+from io import BytesIO
+from pdf2image import convert_from_bytes
 from scout_agents.reader_agent import reader_agent
 from scout_agents.rename_agent import rename_agent
 from scout_agents.file_mover_agent import file_mover_agent
@@ -15,6 +18,43 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+def extract_pdf_images(pdf_path: str) -> dict:
+    """
+    Convert PDF to base64-encoded images for vision processing.
+    Returns extracted images while keeping original PDF untouched.
+    """
+    try:
+        # Read PDF into memory
+        with open(pdf_path, 'rb') as pdf_file:
+            pdf_bytes = pdf_file.read()
+        
+        # Convert PDF pages to images in memory
+        images = convert_from_bytes(pdf_bytes, dpi=200)
+        
+        # Convert images to base64
+        image_data = []
+        for i, image in enumerate(images):
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            base64_image = base64.b64encode(buffered.getvalue()).decode()
+            image_data.append({
+                "page": i + 1,
+                "base64_image": base64_image
+            })
+        
+        return {
+            "success": True,
+            "page_count": len(images),
+            "images": image_data
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to extract PDF images: {str(e)}",
+            "images": []
+        }
+
 # Run with python -m backend.agents.scout_orchestrator
 async def main(pdf_file_path: str, original_file_name: str, use_local_processing: bool = True):
     status_updates = []
@@ -26,22 +66,46 @@ async def main(pdf_file_path: str, original_file_name: str, use_local_processing
     final_target_folder_path = None # Local folder path instead of ID
     final_moved_path_info = None # Local file path after move
 
-    current_file_path = client.files.create(
-        file=open(current_file_path, "rb"),
-        purpose="vision"
-    )
+    # Extract PDF images for vision processing
+    image_extraction_result = extract_pdf_images(current_file_path)
+    if not image_extraction_result["success"]:
+        status_updates.append(f"Image extraction failed: {image_extraction_result['error']}")
+    else:
+        status_updates.append(f"Image extraction completed for {image_extraction_result['page_count']} pages")
 
     try:
         with trace("Scout Orchestrator Local PDF Trace"):
             status_updates.append(f"Starting local PDF orchestration for file: {current_file_path}, original name: {current_file_name}")
 
-            # Process local PDF file
+            # Process local PDF file with both text extraction and vision analysis
             try:
                 status_updates.append(f"Running Reader Agent for file: {current_file_path}")
+                
+                # Prepare task prompt with images data for vision processing
+                if image_extraction_result["success"]:
+                    import json
+                    images_json = json.dumps(image_extraction_result["images"])
+                    task_prompt = f"""Analyze the PDF file '{current_file_path}' (original name: '{current_file_name}') for organization purposes.
+
+INSTRUCTIONS:
+1. Use the analyze_pdf_images tool with the images data below to get visual understanding of the PDF content
+2. Use the read_local_pdf tool to extract text content from the PDF file
+3. Combine both vision analysis and text extraction to provide comprehensive understanding
+4. Focus on identifying: document type, main topics, key information, and organizational categories
+5. Output concise but comprehensive information suitable for file organization
+
+IMAGES DATA (use with analyze_pdf_images tool):
+{images_json}
+
+Extract key information for organization based on this analysis."""
+                else:
+                    # Fallback if image extraction failed
+                    task_prompt = f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization. Image extraction was unavailable, so rely on text extraction."
+                
                 reader_payload = {
                     "file_path": current_file_path,
                     "original_file_name": current_file_name,
-                    "task_prompt": f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization."
+                    "task_prompt": task_prompt
                 }
                 read_file_run = await Runner.run(
                     reader_agent, 
