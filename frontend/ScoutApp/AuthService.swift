@@ -6,8 +6,10 @@ class AuthService: NSObject, ObservableObject {
     private var accessToken: String? // Store the token
     private var authSession: ASWebAuthenticationSession?
 
-    // Ensure this URL points to your running backend
-    private let backendURL = "http://localhost:8000" // Ensure this is correct
+    // Use dynamic backend URL from AppConfig instead of hardcoded localhost
+    private var backendURL: String {
+        return AppConfig.backendBaseURL
+    }
     let callbackURLScheme = "scoutapp" // Must match Info.plist
     private let userDefaultsTokenKey = "googleDriveAccessToken"
 

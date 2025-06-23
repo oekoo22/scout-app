@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(SCOUT_USE_LOCAL_IP=true python3 -c \"from config import config; print(f'OAuth Redirect URI: {config.oauth_redirect_uri}'); print(f'Base URL: {config._get_base_url()}'); print(f'Use Local IP: {config.use_local_ip}')\")",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(./start_mobile.sh:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(kill:*)",
+      "Bash(ls:*)",
+      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_DEBUG=true python3 app.py)",
+      "Bash(sudo:*)",
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw:*)",
+      "Bash(python:*)",
+      "Bash(rg:*)",
+      "Bash(SCOUT_USE_LOCAL_IP=true python -c \"\nfrom config import config\nprint('=== Mobile Mode OAuth Configuration ===')\nprint(f'OAuth Redirect URI: {config.oauth_redirect_uri}')\nprint(f'OAuth Base Host: {config.oauth_base_host}')\nprint(f'Local IP: {config.local_ip}')\nprint(f'Use Local IP: {config.use_local_ip}')\nprint(f'Base URL: {config._get_base_url()}')\nprint('\\\\n=== OAuth Warnings ===')\nfor warning in config._get_oauth_warnings():\n    print(f'⚠️  {warning}')\n\")",
+      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python -c \"\nfrom config import config\nprint('=== Mobile Mode with OAuth Host Override ===')\nprint(f'OAuth Redirect URI: {config.oauth_redirect_uri}')\nprint(f'OAuth Base Host: {config.oauth_base_host}')\nprint(f'Local IP: {config.local_ip}')\nprint(f'Use Local IP: {config.use_local_ip}')\nprint(f'Base URL: {config._get_base_url()}')\nprint('\\\\n=== OAuth Warnings ===')\nwarnings = config._get_oauth_warnings()\nif warnings:\n    for warning in warnings:\n        print(f'⚠️  {warning}')\nelse:\n    print('✅ No OAuth warnings - configuration looks good!')\n\")",
+      "Bash(cp:*)",
+      "Bash(SCOUT_USE_LOCAL_IP=true python3 -c \"from config import config; print(''Config loaded with local IP enabled''); print(f''OAuth Redirect URI: {config.oauth_redirect_uri}''); print(f''Base URL: {config._get_base_url()}''); print(f''Local IP: {config.local_ip}'')\")",
+      "Bash(SCOUT_USE_LOCAL_IP=true python3 -c \"from config import config; print('Config loaded with local IP enabled'); print(f'OAuth Redirect URI: {config.oauth_redirect_uri}'); print(f'Base URL: {config._get_base_url()}'); print(f'Local IP: {config.local_ip}')\")",
+      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python3 -c \"from config import config; print('Config loaded with local IP and OAuth host override'); print(f'OAuth Redirect URI: {config.oauth_redirect_uri}'); print(f'Base URL: {config._get_base_url()}'); print(f'Local IP: {config.local_ip}')\")",
+      "Bash(SCOUT_USE_LOCAL_IP=true SCOUT_OAUTH_HOST=192.168.178.187 python3 -c \"from google_drive_auth import get_redirect_uri; print(f'Google Auth Redirect URI: {get_redirect_uri()}')\")"
+    ],
+    "deny": []
+  }
+}

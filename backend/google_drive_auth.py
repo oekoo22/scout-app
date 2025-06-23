@@ -16,7 +16,9 @@ CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json'
 # Path to store the user's access and refresh tokens
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), 'token.json')
 
-REDIRECT_URI = 'http://localhost:8000/auth/google/callback' # Must match Google Cloud Console
+# Always use localhost for OAuth redirect - this works with ASWebAuthenticationSession
+# regardless of where the backend server is running
+REDIRECT_URI = 'http://localhost:8000/auth/google/callback'
 
 def get_drive_service():
     """Gets an authorized Google Drive API service instance."""
