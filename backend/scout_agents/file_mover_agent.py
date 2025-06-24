@@ -30,7 +30,7 @@ file_mover_agent = Agent(
         "Extract the source file path and target folder path from the task prompt and provide them to the tool. "
         "Your final output MUST be the confirmation returned by the 'move_local_file' tool, matching the FileMoveConfirmation model."
     ),
-    model="gpt-4.1-mini",
+    model="gpt-4o-mini",
     tools=[move_local_file],
     output_type=FileMoveConfirmation
 )

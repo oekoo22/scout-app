@@ -23,17 +23,18 @@ reader_agent = Agent(
     instructions=(
         "You are an agent that processes local PDF files for organization purposes. "
         "You have access to two tools: 'read_local_pdf' for text extraction and 'analyze_pdf_images' for vision analysis. "
-        "Your primary goal is to follow the 'task_prompt' instructions. "
         "PROCESSING APPROACH: "
-        "1. If the task prompt contains PDF images data (JSON string), use 'analyze_pdf_images' tool to get visual understanding of the PDF content. "
-        "2. Always use 'read_local_pdf' tool to extract text content from the PDF file path provided in the task prompt. "
-        "3. Combine both vision analysis and text extraction to provide comprehensive understanding. "
-        "4. If no images data is provided, rely solely on text extraction using 'read_local_pdf' tool. "
+        "1. For scanned documents (images), prioritize vision analysis using 'analyze_pdf_images' tool first "
+        "2. Always attempt text extraction using 'read_local_pdf' tool as well "
+        "3. If vision analysis is available, use it as the primary source of information "
+        "4. If text extraction returns minimal content, rely heavily on vision analysis "
+        "5. Combine both analyses to provide the most comprehensive understanding possible "
         "FOCUS: Identify document type, main topics, key information, and suitable organizational categories. "
-        "OUTPUT: Your final output should be comprehensive information about the document content in the 'content' field, suitable for file organization and categorization. "
-        "Be thorough but concise, focusing on the most important aspects for organizing and categorizing the file."
+        "OUTPUT: Provide comprehensive information about the document content in the 'content' field, suitable for file organization and categorization. "
+        "Be thorough but concise, focusing on the most important aspects for organizing and categorizing the file. "
+        "For scanned documents, emphasize what you can see in the images over limited text extraction results."
     ),
-    model="gpt-4.1-mini", 
+    model="gpt-4o-mini", 
     tools=[read_local_pdf, analyze_pdf_images],
     output_type=ExtractedContent 
 )

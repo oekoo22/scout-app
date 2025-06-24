@@ -33,7 +33,7 @@ folder_agent = Agent(
         "6. Your final output MUST be the 'folder_name' and 'folder_path' of the selected or newly created folder, matching the LocalFolderOutput model."
         "   The folder_path should be the full absolute path to the folder."
     ),
-    model="gpt-4.1-mini",
+    model="gpt-4o-mini",
     tools=[search_local_folders, create_local_folder],
     output_type=LocalFolderOutput
 )

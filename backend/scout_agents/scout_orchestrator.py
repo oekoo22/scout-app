@@ -70,8 +70,24 @@ async def main(pdf_file_path: str, original_file_name: str, use_local_processing
     image_extraction_result = extract_pdf_images(current_file_path)
     if not image_extraction_result["success"]:
         status_updates.append(f"Image extraction failed: {image_extraction_result['error']}")
+        # Continue with text-only processing
     else:
-        status_updates.append(f"Image extraction completed for {image_extraction_result['page_count']} pages")
+        page_count = image_extraction_result.get('page_count', 0)
+        if page_count == 0:
+            status_updates.append("Image extraction succeeded but no pages found")
+            image_extraction_result["success"] = False
+        else:
+            status_updates.append(f"Image extraction completed for {page_count} pages")
+            # Validate that images actually contain data
+            images = image_extraction_result.get('images', [])
+            if not images or not all(img.get('base64_image') for img in images):
+                status_updates.append("Warning: Some extracted images are empty or invalid")
+                # Filter out invalid images
+                valid_images = [img for img in images if img.get('base64_image')]
+                image_extraction_result['images'] = valid_images
+                image_extraction_result['page_count'] = len(valid_images)
+                if len(valid_images) == 0:
+                    image_extraction_result["success"] = False
 
     try:
         with trace("Scout Orchestrator Local PDF Trace"):
@@ -81,38 +97,38 @@ async def main(pdf_file_path: str, original_file_name: str, use_local_processing
             try:
                 status_updates.append(f"Running Reader Agent for file: {current_file_path}")
                 
-                # Prepare task prompt with images data for vision processing
+                # Prepare task prompt - simplified approach
                 if image_extraction_result["success"]:
-                    import json
-                    images_json = json.dumps(image_extraction_result["images"])
                     task_prompt = f"""Analyze the PDF file '{current_file_path}' (original name: '{current_file_name}') for organization purposes.
 
 INSTRUCTIONS:
-1. Use the analyze_pdf_images tool with the images data below to get visual understanding of the PDF content
-2. Use the read_local_pdf tool to extract text content from the PDF file
-3. Combine both vision analysis and text extraction to provide comprehensive understanding
-4. Focus on identifying: document type, main topics, key information, and organizational categories
-5. Output concise but comprehensive information suitable for file organization
+1. First use analyze_pdf_images tool with the extracted image data to get visual understanding
+2. Then use read_local_pdf tool to extract any available text content
+3. Combine both analyses to provide comprehensive understanding
+4. Focus on: document type, main topics, key information, and organizational categories
+5. For scanned documents, prioritize vision analysis as text extraction may be minimal
 
-IMAGES DATA (use with analyze_pdf_images tool):
-{images_json}
-
-Extract key information for organization based on this analysis."""
+File path: {current_file_path}
+Extracted {image_extraction_result['page_count']} pages as images for analysis."""
                 else:
                     # Fallback if image extraction failed
-                    task_prompt = f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization. Image extraction was unavailable, so rely on text extraction."
+                    task_prompt = f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization. Image extraction failed: {image_extraction_result.get('error', 'Unknown error')}, so rely on text extraction only."
                 
-                reader_payload = {
-                    "file_path": current_file_path,
-                    "original_file_name": current_file_name,
-                    "task_prompt": task_prompt
-                }
+                # Store image data globally for tools to access
+                if image_extraction_result["success"]:
+                    # Store image data in a way tools can access it
+                    import json
+                    global_images_file = "/tmp/pdf_images_data.json"
+                    with open(global_images_file, 'w') as f:
+                        json.dump(image_extraction_result["images"], f)
+                    
+                    # Add instruction to task prompt
+                    task_prompt += f"\n\nNOTE: Image data is available. Use analyze_pdf_images tool with file_path='{global_images_file}' to access the extracted images."
+                
                 read_file_run = await Runner.run(
                     reader_agent, 
-                    reader_payload["task_prompt"]
+                    task_prompt
                 )
-                #if read_file_run.error:
-                 #   raise Exception(f"Reader Agent Error: {read_file_run.error_message}")
                 extracted_content_model = read_file_run.final_output
                 status_updates.append(f"Reader agent processed. Output content: {getattr(extracted_content_model, 'content', 'N/A')}")
                 context_for_agents = getattr(extracted_content_model, 'content', '') # Use .content attribute
@@ -233,6 +249,14 @@ Extract key information for organization based on this analysis."""
         
         final_path_suggestion_str = f"Move status: {fmpi_status}. Details: {fmpi_detail}"
 
+    # Cleanup temporary files
+    try:
+        global_images_file = "/tmp/pdf_images_data.json"
+        if os.path.exists(global_images_file):
+            os.remove(global_images_file)
+    except Exception:
+        pass  # Ignore cleanup errors
+    
     return {
         "original_file": original_file_name or os.path.basename(pdf_file_path), # String
         "renamed_file": final_renamed_name, # String

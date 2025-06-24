@@ -12,7 +12,7 @@ set_default_openai_key(os.getenv("OPENAI_API_KEY"))
 agent = Agent(
     name="Triage Agent",
     instructions="You decide to which agent you handoff the task.",
-    model="gpt-4.1-mini",
+    model="gpt-4o-mini",
 )
 
 async def main():

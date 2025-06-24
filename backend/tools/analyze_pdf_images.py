@@ -4,12 +4,13 @@ import os
 from typing import List, Dict
 
 @function_tool
-def analyze_pdf_images(images_data: str) -> str:
+def analyze_pdf_images(images_data: str = None, file_path: str = None) -> str:
     """
     Analyze PDF page images using OpenAI vision API for content understanding.
     
     Args:
         images_data: JSON string containing array of image objects with 'page' and 'base64_image' fields
+        file_path: Path to JSON file containing image data (alternative to images_data)
     
     Returns:
         Combined analysis of all PDF pages for organization purposes
@@ -19,9 +20,17 @@ def analyze_pdf_images(images_data: str) -> str:
         
         # Parse the images data
         try:
-            images = json.loads(images_data)
-        except json.JSONDecodeError:
-            return "Error: Invalid images data format. Expected JSON string with array of image objects."
+            if file_path and os.path.exists(file_path):
+                # Load from file
+                with open(file_path, 'r') as f:
+                    images = json.load(f)
+            elif images_data:
+                # Load from string parameter
+                images = json.loads(images_data)
+            else:
+                return "Error: No image data provided. Specify either images_data or file_path."
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            return f"Error: Failed to load images data - {str(e)}"
         
         if not isinstance(images, list):
             return "Error: Images data must be an array of image objects."

@@ -26,7 +26,7 @@ rename_agent = Agent(
         "Your final output MUST be ONLY the new filename that the file was successfully renamed to, in the 'filename' field of the output model. "
         "Do not add any other description, explanation, or text."
     ),
-    model="gpt-4.1-mini", 
+    model="gpt-4o-mini", 
     tools=[rename_local_file],
     output_type=RenameFileOutput
 )

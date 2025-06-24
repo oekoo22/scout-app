@@ -20,7 +20,7 @@ folder_preparator = Agent(
         "You are an assistant for the organizer_agent. Your job is to evaluate if there is a folder in the assets folder in which you can sort the file or create a new one if it doesn't exist."
         "Your final_output must be maching the FolderValidator model. You need to give the folder_name as a string and validate if their is already existing a folder, where the file could go in and give that as a boolean."
     ),
-    model="gpt-4.1-mini",
+    model="gpt-4o-mini",
     output_type=FolderValidator
 )
 
@@ -33,7 +33,7 @@ organizer_agent = Agent(
     "If folder_is_already_created is True, you can move the file in the folder."
     "If folder_is_already_created is False, you need to create a new folder and then move the file in it. The name of the folder should be self explanatory to the user and should match the meaning of the file."
     ),
-    model="gpt-4.1-mini",
+    model="gpt-4o-mini",
     tools=[folder_preparator.as_tool(
         tool_name="folder_preparator",
         tool_description="Get the preperation for a file and see if there is already existing a folder and/or how the folder or a new one is named."
