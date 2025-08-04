@@ -105,6 +105,7 @@ frontend/ScoutApp.xcodeproj/xcuserdata/
 # Local Storage (our processed files)
 backend/local_storage/
 backend/temp/
+backend/assets/
 *.pdf
 *.json
 
