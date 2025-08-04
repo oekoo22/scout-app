@@ -32,6 +32,12 @@ struct APITestView: View {
                 .padding()
                 .buttonStyle(.borderedProminent)
                 
+                Button("Test Local PDF Processing") {
+                    testLocalPDFProcessing()
+                }
+                .padding()
+                .buttonStyle(.bordered)
+                
                 if let response = orchestratorResponse {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 10) {
@@ -123,6 +129,63 @@ struct APITestView: View {
                     }
                 }
             }
+        }
+    }
+    
+    func testLocalPDFProcessing() {
+        orchestratorResponse = nil // Clear previous results
+        errorMessage = nil       // Clear previous errors
+        
+        // Load the actual test_file.pdf from the app bundle
+        guard let pdfData = loadTestPDFFromBundle() else {
+            errorMessage = "Failed to load test_file.pdf from app bundle. Make sure the file is included in the project."
+            return
+        }
+        
+        let testFileName = "test_file.pdf"
+        
+        APIService.shared.processLocalPDF(pdfData: pdfData, fileName: testFileName) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+                    self.orchestratorResponse = response
+                    if let backendError = response.error_message {
+                        self.errorMessage = "Backend processing error: \(backendError)"
+                    }
+                case .failure(let error):
+                    self.orchestratorResponse = nil // Clear response on failure
+                    self.errorMessage = "Local PDF Test Failed: \(error.localizedDescription)"
+                    switch error {
+                    case .decodingFailed(let decodingError):
+                        self.errorMessage = "Failed to decode response: \(decodingError.localizedDescription)"
+                    case .encodingFailed(let encodingError):
+                        self.errorMessage = "Failed to encode request: \(encodingError.localizedDescription)"
+                    case .invalidURL:
+                        self.errorMessage = "Invalid API URL."
+                    case .requestFailed(let reqError):
+                        self.errorMessage = "Network request failed: \(reqError.localizedDescription)"
+                    case .invalidResponse:
+                        self.errorMessage = "Invalid response from server (e.g., non-200 or unparseable error)."
+                    }
+                }
+            }
+        }
+    }
+    
+    func loadTestPDFFromBundle() -> Data? {
+        // Load the actual test_file.pdf from the app bundle
+        guard let url = Bundle.main.url(forResource: "test_file", withExtension: "pdf") else {
+            print("Error: test_file.pdf not found in app bundle")
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            print("Successfully loaded test_file.pdf from bundle (\(data.count) bytes)")
+            return data
+        } catch {
+            print("Error loading test_file.pdf: \(error.localizedDescription)")
+            return nil
         }
     }
 }

@@ -19,6 +19,7 @@
 		F3FEDF502DE4940C00305A08 /* NetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FEDF4F2DE4940C00305A08 /* NetworkService.swift */; };
 		F3FEDF512DE4940C00305A08 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FEDF4E2DE4940C00305A08 /* AuthService.swift */; };
 		F3FEDF532DE494F800305A08 /* DriveProcessorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FEDF522DE494F800305A08 /* DriveProcessorView.swift */; };
+		F3TESTPDF2E02DEFC00AB59DF /* test_file.pdf in Resources */ = {isa = PBXBuildFile; fileRef = F3TESTPDF2E02DEFC00AB59DE /* test_file.pdf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		F3FEDF4E2DE4940C00305A08 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		F3FEDF4F2DE4940C00305A08 /* NetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkService.swift; sourceTree = "<group>"; };
 		F3FEDF522DE494F800305A08 /* DriveProcessorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveProcessorView.swift; sourceTree = "<group>"; };
+		F3TESTPDF2E02DEFC00AB59DE /* test_file.pdf */ = {isa = PBXFileReference; lastKnownFileType = file; path = test_file.pdf; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +73,7 @@
 				1234567890ABCDE3 /* ScannerView.swift */,
 				1234567890ABCDE4 /* SettingsView.swift */,
 				1234567890ABCDE5 /* Info.plist */,
+				F3TESTPDF2E02DEFC00AB59DE /* test_file.pdf */,
 			);
 			path = ScoutApp;
 			sourceTree = "<group>";
@@ -151,6 +154,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F3TESTPDF2E02DEFC00AB59DF /* test_file.pdf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
