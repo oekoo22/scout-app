@@ -1,214 +1,197 @@
-# Scout App - Document Scanner with AI Processing
+# Scout App - AI-Powered Document Scanner
 
-A mobile iOS app that scans documents, converts them to PDF, and processes them using AI-powered backend services. Supports both local storage and Google Drive integration.
+A mobile iOS app that scans documents, converts them to PDF, and processes them using AI-powered backend services. The AI agents automatically rename files and organize them into appropriate folders based on content analysis.
 
-## 🏗️ Architecture
+## 🚀 Quick Start (5 Minutes)
 
-- **Frontend**: iOS app built with SwiftUI and VisionKit for document scanning
-- **Backend**: Python FastAPI server with AI-powered document processing
-- **Storage**: Local file system + optional Google Drive integration
-- **AI Processing**: Document analysis, intelligent naming, and categorization
-- **Network**: Local network communication between iOS device and Mac backend
-
-## 📋 Prerequisites
-
-### macOS Development Machine
-- **macOS** 12.0 or later
-- **Python 3.8+** installed
-- **Xcode 14.0+** for iOS development
-- **Git** for version control
-
-### iOS Device/Simulator
-- **iOS 15.0+** for running the app
-- **Same WiFi network** as development machine (for device testing)
-
-### API Keys (Optional)
-- **OpenAI API Key** for advanced AI processing features
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
+### 1. Clone & Setup
 ```bash
 git clone [your-repo-url]
 cd scout-app
-```
-
-### 2. Automated Setup (Recommended)
-```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-### 3. Configure Network for Mobile Device
+### 2. Start Backend
 ```bash
-chmod +x configure_network.sh
-./configure_network.sh
+./start.sh
 ```
 
-### 4. Start Development Server
-```bash
-./start_backend.sh
-```
-
-### 5. Build and Run iOS App
+### 3. Build iOS App
 1. Open `frontend/ScoutApp.xcodeproj` in Xcode
-2. Select your target device/simulator
-3. Build and run (⌘+R)
+2. Build and run on your device/simulator (⌘+R)
 
-## ✨ Features
+That's it! The app will work locally without any additional configuration.
 
-### 📱 Document Scanning
-- **VisionKit Integration**: Native iOS document scanner with automatic edge detection
-- **Multi-page Support**: Scan multiple pages into a single PDF
-- **Camera Integration**: Capture individual photos and convert to PDF
-- **Real-time Preview**: Review scanned content before processing
+## 📋 Prerequisites
 
-### 🤖 AI-Powered Processing
-- **Intelligent Naming**: AI suggests meaningful filenames based on content
-- **Smart Categorization**: Automatic folder organization suggestions
-- **Content Analysis**: Extract key information from scanned documents
+- **macOS** 12.0+ with Xcode 14.0+
+- **Python 3.8+** installed
+- **iOS device or simulator** with iOS 15.0+
+- **Same WiFi network** for device and Mac (for physical device testing)
 
-### 💾 Flexible Storage Options
-- **Local Storage**: All PDFs saved locally on both device and backend
-- **Google Drive Integration**: Optional cloud sync and organization
-- **Metadata Tracking**: JSON metadata files with processing history
-- **No Lock-in**: Documents accessible without the app
+## ✨ How It Works
 
-### 🌐 Network Communication
-- **Local Network**: Secure communication between iOS device and Mac
-- **Auto-configuration**: Scripts automatically detect and configure IP addresses
-- **Development Mode**: Localhost support for iOS Simulator testing
-- **Mobile Support**: Network IP configuration for physical device testing
+1. **📸 Scan Documents**: Use the iOS app to scan documents with your camera
+2. **📄 Convert to PDF**: Documents are automatically converted to PDF format
+3. **🤖 AI Processing**: Backend AI agents analyze the content and:
+   - **📝 Rename**: Generate meaningful filenames based on document content
+   - **📁 Organize**: Create appropriate folders and move files automatically
+   - **💾 Store**: Save everything locally with metadata tracking
 
-### Configuration System
-- Environment-based configuration (development/production)
-- Dynamic network detection and IP resolution
-- Configurable CORS origins
-- OAuth redirect URI management
+## 🏗️ Architecture
 
-### iOS App Enhancements
-- Dynamic backend URL configuration
-- Built-in backend health checking
-- Settings panel for network configuration
-- Improved error handling with specific error messages
+- **Frontend**: iOS app (SwiftUI + VisionKit for scanning)
+- **Backend**: Python FastAPI server with AI agent system
+- **Storage**: Local file system (Google Drive optional)
+- **AI**: OpenAI GPT-4o-mini for content analysis and organization
+- **Network**: Local network communication between iOS and backend
 
-### Backend Improvements
-- Comprehensive logging with emoji indicators
-- Better error handling and debugging
-- Network utilities and IP detection
-- Health check and configuration endpoints
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 scout-app/
-├── backend/                    # Python FastAPI backend
-│   ├── app.py                 # Main application
-│   ├── config.py              # Configuration management
-│   ├── network_utils.py       # Network utilities
-│   ├── google_drive_auth.py   # Google OAuth handling
-│   └── scout_agents/          # AI processing agents
-├── frontend/                  # iOS SwiftUI app
-│   └── ScoutApp/
-│       ├── Config.swift       # App configuration
-│       ├── AuthService.swift  # Authentication service
-│       └── SettingsView.swift # Settings with backend config
-├── start_dev.sh              # Development startup script
-├── start_mobile.sh           # Mobile testing startup script
-├── setup.sh                  # Initial setup script
-├── setup_oauth.py            # OAuth configuration helper
-└── OAUTH_SETUP.md           # OAuth setup guide
+├── setup.sh                   # 🚀 Single setup script
+├── start.sh                   # ⚡ Smart backend startup
+├── README.md                  # 📖 This file
+├── requirements.txt           # 📦 Python dependencies
+├── backend/                   # 🐍 Python FastAPI backend
+│   ├── app.py                # Main API application
+│   ├── config.py             # Configuration management
+│   ├── scout_agents/         # 🤖 AI processing agents
+│   │   ├── reader_agent.py   # Content analysis
+│   │   ├── rename_agent.py   # File renaming
+│   │   ├── folder_agent.py   # Folder organization
+│   │   └── file_mover_agent.py # File operations
+│   ├── tools/                # 🛠️ Agent tools
+│   └── local_storage/        # 📁 Processed documents
+└── frontend/ScoutApp/        # 📱 iOS SwiftUI app
+    ├── ScannerView.swift     # Document scanning
+    ├── Network/APIService.swift # Backend communication
+    └── Views/                # App screens
 ```
 
-## Configuration
+## 🔧 Configuration
 
-### Environment Variables (.env)
+### Basic Usage (Local Only)
+No configuration needed! The app works out of the box with local storage.
+
+### Advanced Features (Optional)
+
+#### AI Processing
+For enhanced AI features, add your OpenAI API key:
 ```bash
-SCOUT_ENV=development
-SCOUT_USE_LOCAL_IP=false        # Set to true for mobile testing
-SCOUT_DEBUG=true
-SCOUT_HOST=0.0.0.0
-SCOUT_PORT=8000
+# Edit .env file
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### iOS App Configuration
-- **Development**: Uses `localhost:8000` automatically
-- **Mobile Testing**: Configure custom backend URL in Settings
-- **Health Check**: Built-in backend connectivity testing
+#### Google Drive Integration - Work in progress
+For cloud sync capabilities:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project and enable Google Drive API
+3. Create OAuth 2.0 credentials
+4. Download `credentials.json` to `backend/` directory
+5. Add redirect URIs to Google Console:
+   - `http://localhost:8000/auth/google/callback`
+   - `http://YOUR_LOCAL_IP:8000/auth/google/callback`
 
-## Google OAuth Setup
+## 🌐 Network Configuration
 
-### Required Redirect URIs
-Add these to your Google Cloud Console OAuth configuration:
-- `http://localhost:8000/auth/google/callback` (development)
-- `http://YOUR_LOCAL_IP:8000/auth/google/callback` (mobile testing)
+### iOS Simulator
+- Automatically uses `localhost:8000`
+- No additional setup required
 
-### Setup Helper
-```bash
-python3 setup_oauth.py
-```
+### Physical iOS Device
+The `start.sh` script automatically detects when you need network configuration:
+- Detects your local IP address
+- Updates iOS app configuration
+- Shows you the URL to use
 
-## Testing Workflows
+## 📱 API Endpoints
 
-### Development Testing (Simulator)
-1. Run `./start_dev.sh`
-2. Backend runs on `localhost:8000`
-3. iOS Simulator can access localhost directly
-4. OAuth works with localhost redirect URI
+### Core Endpoints
+- `GET /` - Health check
+- `GET /health` - Detailed backend status
+- `POST /process-local-pdf` - Process PDFs locally (recommended)
 
-### Mobile Device Testing
-1. Run `./start_mobile.sh`
-2. Backend runs on `0.0.0.0:8000` (all interfaces)
-3. Script shows your local IP (e.g., `192.168.1.100`)
-4. Configure iOS app to use `http://192.168.1.100:8000`
-5. Add network IP redirect URI to Google Console
-6. Test OAuth flow on physical device
-
-## API Endpoints
-
-- `GET /` - Hello World
-- `GET /health` - Backend health check
+### Optional Endpoints (if configured)
+- `POST /upload-pdf` - Process PDFs with Google Drive sync
+- `GET /auth/google` - Google OAuth flow
 - `GET /config` - Configuration information
-- `GET /network` - Network information
-- `GET /auth/google` - Initiate Google OAuth
-- `GET /auth/google/callback` - OAuth callback handler
-- `POST /process-file` - Process document with AI agents
 
-## Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Mobile device can't reach backend**
-   - Ensure both devices are on the same network
-   - Check firewall settings
-   - Verify IP address is correct
+**"Could not connect to server"**
+- Run `./start.sh` again - it will reconfigure network settings
+- Ensure iOS device and Mac are on the same WiFi network
+- Check that backend is running (look for "Server running" message)
 
-2. **OAuth redirect_uri_mismatch**
-   - Make sure Google Console has correct redirect URIs
-   - Check backend logs for actual redirect URI being used
-   - Use `/config` endpoint to verify configuration
+**"Virtual environment not found"**
+- Run `./setup.sh` to create the virtual environment
+- Check that Python 3.8+ is installed: `python3 --version`
 
-3. **iOS app connection issues**
-   - Use Settings > Backend Configuration to test health
-   - Try accessing backend URL directly in mobile browser
-   - Check backend logs for connection attempts
+**"Port 8000 in use"**
+- The start script will automatically handle this
+- Or manually kill the process: `lsof -ti:8000 | xargs kill`
+
+**iOS build errors**
+- Clean build folder in Xcode (⌘+Shift+K)
+- Ensure Xcode 14.0+ is installed
+- Check iOS deployment target is set to 15.0+
+
+**PDF processing fails**
+- Check backend logs in terminal
+- Verify OpenAI API key if using AI features
+- Ensure sufficient disk space in `backend/local_storage/`
 
 ### Debug Commands
-```bash
-# Check your local IP
-ifconfig | grep "inet " | grep -v 127.0.0.1
 
-# Test backend health
+```bash
+# Check backend health
 curl http://localhost:8000/health
 
-# Test mobile access (replace IP)
-curl http://192.168.1.100:8000/health
+# Check network configuration
+curl http://YOUR_IP:8000/config
 
-# View backend configuration
-curl http://localhost:8000/config
+# View processed files
+ls -la backend/local_storage/processed_pdfs/
+
+# Check backend logs
+./start.sh  # Logs appear in terminal
 ```
 
-## Development
+### Google OAuth Issues
+
+**"redirect_uri_mismatch" error**
+- Ensure Google Console has correct redirect URIs
+- Check that backend IP matches the configured URIs
+- Use the IP address shown by `./start.sh`
+
+**Mobile device can't complete OAuth**
+- Ensure firewall allows connections on port 8000
+- Add your local IP redirect URI to Google Console
+- Test backend accessibility: try `http://YOUR_IP:8000/health` in mobile browser
+
+## 🔍 Testing the App
+
+### Local Testing (No Google Drive)
+1. Start backend: `./start.sh`
+2. Open iOS app
+3. Go to "API Test" tab
+4. Click "Test Local PDF Processing"
+5. Should see successful processing results
+
+### Full Workflow Testing
+1. Start backend: `./start.sh`
+2. Open iOS app
+3. Tap "Scanner" tab
+4. Scan a document
+5. Wait for processing to complete
+6. Check `backend/local_storage/processed_pdfs/` for organized files
+
+## 🛠️ Development
 
 ### Backend Development
 ```bash
@@ -218,10 +201,65 @@ python app.py
 ```
 
 ### iOS Development
-Open `frontend/ScoutApp.xcodeproj` in Xcode
+- Open `frontend/ScoutApp.xcodeproj` in Xcode
+- Make changes to Swift files
+- Build and run (⌘+R)
 
-### Adding New Features
-1. Update backend APIs in `app.py`
-2. Add iOS networking code in `APIService.swift`
-3. Update configuration if needed
-4. Test in both development and mobile modes
+### Adding New AI Agents
+1. Create new agent in `backend/scout_agents/`
+2. Add tools in `backend/tools/`
+3. Update orchestrator in `scout_orchestrator.py`
+4. Test with local PDF processing
+
+## 📊 File Processing Pipeline
+
+1. **Document Scan** → iOS app captures images
+2. **PDF Creation** → Images converted to PDF
+3. **Upload** → PDF sent to backend via `/process-local-pdf`
+4. **AI Analysis** → Agents analyze content:
+   - **Reader Agent**: Extracts text and understands content
+   - **Rename Agent**: Suggests meaningful filename
+   - **Folder Agent**: Determines appropriate folder structure
+   - **File Mover**: Organizes file in correct location
+5. **Storage** → File saved with metadata in `local_storage/processed_pdfs/`
+6. **Response** → Results returned to iOS app
+
+## 🔐 Security & Privacy
+
+- **Local First**: All processing happens locally by default
+- **No Cloud Dependency**: App works completely offline
+- **Optional Cloud Sync**: Google Drive integration is entirely optional
+- **API Key Management**: Your OpenAI/Google keys stay on your machine
+- **Network Security**: Backend only accessible on your local network
+
+## 📝 Environment Variables
+
+Create a `.env` file in the project root (setup.sh creates a template):
+
+```bash
+# Development settings
+SCOUT_ENV=development
+SCOUT_DEBUG=true
+SCOUT_HOST=0.0.0.0
+SCOUT_PORT=8000
+
+# Optional: AI processing
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Google Drive integration
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test with both simulator and physical device
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
