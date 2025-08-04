@@ -199,9 +199,15 @@ coverage.xml
 *.backup
 *.tmp
 
+# Planning
+claude/
+
 # Editor directories and files
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Architecture
+uml.md

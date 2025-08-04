@@ -101,15 +101,15 @@ async def main(pdf_file_path: str, original_file_name: str, use_local_processing
                 if image_extraction_result["success"]:
                     task_prompt = f"""Analyze the PDF file '{current_file_path}' (original name: '{current_file_name}') for organization purposes.
 
-INSTRUCTIONS:
-1. First use analyze_pdf_images tool with the extracted image data to get visual understanding
-2. Then use read_local_pdf tool to extract any available text content
-3. Combine both analyses to provide comprehensive understanding
-4. Focus on: document type, main topics, key information, and organizational categories
-5. For scanned documents, prioritize vision analysis as text extraction may be minimal
+                        INSTRUCTIONS:
+                        1. First use analyze_pdf_images tool with the extracted image data to get visual understanding
+                        2. Then use read_local_pdf tool to extract any available text content
+                        3. Combine both analyses to provide comprehensive understanding
+                        4. Focus on: document type, main topics, key information, and organizational categories
+                        5. For scanned documents, prioritize vision analysis as text extraction may be minimal
 
-File path: {current_file_path}
-Extracted {image_extraction_result['page_count']} pages as images for analysis."""
+                        File path: {current_file_path}
+                        Extracted {image_extraction_result['page_count']} pages as images for analysis."""
                 else:
                     # Fallback if image extraction failed
                     task_prompt = f"Read the content of local PDF file '{current_file_path}' (original name: '{current_file_name}') and extract key information for organization. Image extraction failed: {image_extraction_result.get('error', 'Unknown error')}, so rely on text extraction only."
